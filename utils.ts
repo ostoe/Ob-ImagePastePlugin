@@ -75,7 +75,7 @@ export const path = {
 	// return extension without dot, e.g. 'jpg'
 	extension(fullpath: string): string {
 		const positions = [...fullpath.matchAll(new RegExp('\\.', 'gi'))].map(a => a.index)
-		return fullpath.slice(positions[positions.length - 1] + 1)
+		return  ""// fullpath.slice(positions[positions.length - 1] + 1)
 	},
 }
 
@@ -126,7 +126,7 @@ interface VaultWithConfig extends Vault {
 	config?: VaultConfig,
 }
 
-export function getVaultConfig(app: App): VaultConfig|null {
+export function getVaultConfig(app: App): VaultConfig|undefined {
 	const vault = app.vault as VaultWithConfig
 	return vault.config
 }
@@ -141,7 +141,7 @@ export function ConvertImage(file:Blob, quality:number):Promise<ArrayBuffer> {
             image.onload = function () 
 			{
                 let canvas = document.createElement('canvas');
-                let context = canvas.getContext('2d');
+                let context = canvas.getContext('2d')!;
                 let imageWidth = image.width;
                 let imageHeight = image.height;
                 let data = '';
@@ -162,8 +162,7 @@ export function ConvertImage(file:Blob, quality:number):Promise<ArrayBuffer> {
                 var arrayBuffer = base64ToArrayBuffer(data);
                 resolve(arrayBuffer)
             }
-
-			image.src = e.target.result.toString() //将图片的路径设成file路径
+			if (e.target?.result) image.src = e.target.result.toString() //将图片的路径设成file路径
         }
 
 		reader.readAsDataURL(file);

@@ -1,10 +1,11 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, Vault, TFile, TAbstractFile, PluginSettingTab, Setting, HeadingCache, EventRef, MarkdownFileInfo, getLinkpath } from 'obsidian';
-import {
-	debugLog, path, ConvertImage
-} from './utils';
+// import {
+// 	debugLog, path, ConvertImage
+// } from './utils';
 import { renderTemplate } from 'template';
 import { randomInt } from 'crypto';
 import { time } from 'console';
+import * as path from 'path';
 // Remember to rename these classes and interfaces!
 const PASTED_IMAGE_PREFIX = 'Pasted image '
 // interface ImageCPPluginSettings {
@@ -66,6 +67,7 @@ export default class ImageCPPlugin extends Plugin {
 	private imageIndex = 0;
 	private researchFromImageSrc: RegExp;
 	private MDTFile: TFile;
+	imageFileNames: any;
 	async onload() {
 		if (process.platform === "win32") {
 			this.researchFromImageSrc = /<img src="(.*?)" alt="(.*?)"\/><|<img src="(.*?)"\/></
@@ -745,74 +747,6 @@ export default class ImageCPPlugin extends Plugin {
 	// }
 
 
-	smartPasteImage(file: TFile) {
-		const activeFile = this.getActiveFile() // xxxx.md
-		if (!activeFile) {
-			new Notice('Error: No active file found.')
-			return
-		}
-		// this.debuglog1(activeFile.basename, activeFile.name, activeFile.parent.name)
-		const { stem, newName, isMeaningful } = this.generateNewName(file, activeFile) // new
-		// this.debuglog1('newName:', stem, newName, isMeaningful, file.name, JSON.stringify(file), this.imageFileNames.join("IIII")) // 工具， 工具.png true ????
-
-
-		this.renameFile(file, newName, activeFile.path, true)
-		// 调过 弹窗 modal
-
-
-	}
-
-	debuglog1(...args: any[]) {
-		const view = this.app.workspace.getActiveViewOfType(MarkdownView)
-		if (view) {
-			// view?.editor.replaceSelection("```\n")
-			view?.editor.replaceSelection(args.join(", "))
-			// view?.editor.replaceSelection("\n```\n")
-		} else {
-			new Notice(args.join(", "))
-			// console.log((new Date()).toISOString().slice(11, 23), ...args)
-		}
-
-		// editor.replaceSelection
-		// new Notice(args.join(", "))
-		// console.log((new Date()).toISOString().slice(11, 23), ...args)
-	}
-
-
-
-	generateNewName(file: TFile, activeFile: TFile) {
-		let imageNameKey = ''
-		let firstHeading = ''
-		let frontmatter
-		const fileCache = this.app.metadataCache.getFileCache(activeFile)
-		if (fileCache) {
-
-			frontmatter = fileCache.frontmatter
-			imageNameKey = frontmatter?.imageNameKey || ''
-			firstHeading = getFirstHeading(fileCache.headings)
-			// this.debuglog1('frontmatter', imageNameKey, firstHeading, fileCache.frontmatter, JSON.stringify(fileCache))
-		} else {
-			console.warn('could not get file cache from active file', activeFile.name)
-		}
-
-		const stem = renderTemplate(
-			this.settings.imageNamePattern,
-			{
-				imageNameKey,
-				fileName: activeFile.basename,
-				dirName: activeFile.parent.name, // null 为空
-				firstHeading,
-			},
-			frontmatter)
-		const meaninglessRegex = new RegExp(`[${this.settings.dupNumberDelimiter}\\s]`, 'gm')
-		// this.debuglog1("stem: ", stem)
-		return {
-			stem,
-			newName: stem + '.' + file.extension,
-			isMeaningful: stem.replace(meaninglessRegex, '') !== '',
-		}
-	}
-
 	onunload() {
 
 	}
@@ -827,156 +761,10 @@ export default class ImageCPPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	async renameFile(file: TFile, inputNewName: string, sourcePath: string, replaceCurrentLine?: boolean) {
-		// deduplicate name
-		const { name: newName } = await this.deduplicateNewName(inputNewName, file)
-		// this.debuglog1('deduplicated newName:', newName)
-		const originName = file.name
 
-		// generate linkText using Obsidian API, linkText is either  ![](filename.png) or ![[filename.png]] according to the "Use [[Wikilinks]]" setting.
-		const linkText = this.app.fileManager.generateMarkdownLink(file, sourcePath)
 
-		// file system operation: rename the file
-		const newPath = path.join(file.parent.path, newName)
-		try {
-			await this.app.fileManager.renameFile(file, newPath)
-		} catch (err) {
-			new Notice(`Failed to rename ${newName}: ${err}`)
-			throw err
-		}
+	
 
-		if (!replaceCurrentLine) {
-			return
-		}
-
-		// in case fileManager.renameFile may not update the internal link in the active file,
-		// we manually replace the current line by manipulating the editor
-
-		const newLinkText = this.app.fileManager.generateMarkdownLink(file, sourcePath)
-		// this.debuglog1('replace text', linkText, newLinkText)
-
-		const editor = this.getActiveEditor()
-		if (!editor) {
-			new Notice(`Failed to rename ${newName}: no active editor`)
-			return
-		}
-
-		const cursor = editor.getCursor()
-		const line = editor.getLine(cursor.line)
-		const replacedLine = line.replace(linkText, newLinkText)
-		// this.debuglog1('current line -> replaced line', line, replacedLine)
-		// console.log('editor context', cursor, )
-		editor.transaction({
-			changes: [
-				{
-					from: { ...cursor, ch: 0 },
-					to: { ...cursor, ch: line.length },
-					text: replacedLine,
-				}
-			]
-		})
-
-		if (!this.settings.disableRenameNotice) {
-			new Notice(`Renamed ${originName} to ${newName}`)
-		}
-	}
-
-	async renameFile111(file: TFile) {
-		const activeFile = this.getActiveFile()
-		if (!activeFile) {
-			new Notice('Error: No active file found.')
-			return
-		}
-
-		// deduplicate name
-		let newName: string = await this.keepOrgName(file, activeFile);
-		if (this.settings.autoRename) {
-			newName = await this.generateNewName(file, activeFile);
-		}
-		const sourcePath: string = activeFile.path;
-
-		let newPath = "";
-		if (this.settings.autoMove) {
-			const imagePath = this.app.vault.getConfig("attachmentFolderPath") + "/" + this.settings.dirpath;
-			const isCreate = await this.app.vault.adapter.exists(imagePath);
-			if (!isCreate) {
-				await this.app.vault.createFolder(imagePath);
-			}
-
-			newPath = imagePath;
-		}
-		else {
-			newPath = file.parent.path + + "/" + this.settings.dirpath;
-		}
-
-		const originName = file.name;
-		if (this.settings.pngToJpeg) {
-			let binary: ArrayBuffer = await this.app.vault.readBinary(file);
-			let imgBlob: Blob = new Blob([binary]);
-			let arrayBuffer: ArrayBuffer = await ConvertImage(imgBlob, Number(this.settings.quality));
-			await this.app.vault.modifyBinary(file, arrayBuffer);
-		}
-
-		// get origin file link before renaming
-		const linkText = this.makeLinkText(file, sourcePath);
-
-		// file system operation
-		newPath = path.join(newPath, newName)
-		try {
-			await this.app.vault.rename(file, newPath);
-		}
-		catch (err) {
-			new Notice(`Failed to rename ${newName}: ${err}`)
-			throw err
-		}
-
-		const newLinkText = this.makeLinkText(file, sourcePath);
-		console.log('replace text', linkText, newLinkText)
-
-		// in case fileManager.renameFile may not update the internal link in the active file,
-		// we manually replace by manipulating the editor
-		const editor = this.getActiveEditor(sourcePath);
-		if (!editor) {
-			new Notice(`Failed to rename ${newName}: no active editor`)
-			return
-		}
-
-		const cursor = editor.getCursor()
-		const line = editor.getLine(cursor.line)
-		console.log('current line', line)
-		// console.log('editor context', cursor, )
-		editor.transaction({
-			changes: [
-				{
-					from: { ...cursor, ch: 0 },
-					to: { ...cursor, ch: line.length },
-					text: line.replace(linkText, newLinkText),
-				}
-			]
-		})
-
-		new Notice(`Renamed ${originName} to ${newName}`)
-	}
-
-	makeLinkText(file: TFile, sourcePath: string, subpath?: string): string {
-		return this.app.fileManager.generateMarkdownLink(file, sourcePath, subpath)
-	}
-
-	// returns a new name for the input file, with extension
-	async generateNewName1(file: TFile, activeFile: TFile): Promise<string> {
-		const newName = activeFile.basename + '-' + Date.now();
-		const extension = this.settings.pngToJpeg ? 'jpeg' : file.extension;
-
-		return `${newName}.${extension}`;
-	}
-
-	// changes only the extension
-	async keepOrgName(file: TFile, activeFile: TFile): Promise<string> {
-		const newName = file.basename;
-		const extension = this.settings.pngToJpeg ? 'jpeg' : file.extension;
-
-		return `${newName}.${extension}`;
-	}
 
 	getActiveFile() {
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView)
@@ -988,7 +776,7 @@ export default class ImageCPPlugin extends Plugin {
 
 	getActiveEditor(sourcePath: string) {
 		const view = this.app.workspace.getActiveViewOfType(MarkdownView)
-		if (view) {
+		if (view?.file) {
 			if (view.file.path == sourcePath) {
 				return view.editor
 			}
@@ -997,6 +785,9 @@ export default class ImageCPPlugin extends Plugin {
 	}
 
 }
+
+
+
 
 function getFormatNow() {
 	const d = new Date()
