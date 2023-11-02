@@ -142,8 +142,8 @@ export default class ImageCPPlugin extends Plugin {
 				// const oldText1 = stripCr(await this.app.vault.read(file!));
 				// console.log(oldText, oldText1)
 				if (markdownView) {
-				await this.resolveAllImageInMD()
-					
+					await this.resolveAllImageInMD()
+
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					// This command will only show up in Command Palette when the check function returns true
@@ -180,12 +180,12 @@ export default class ImageCPPlugin extends Plugin {
 						return
 					} else if (this.imageNameList.length === 1 && this.imageNameList[0].type != "nai") {
 						// console.log("----------------------")
-						this.moveImage2MDDir111(this.imageNameList[0], file)
-					} 
+						this.pasteOneImage2MDDir(this.imageNameList[0], file)
+					}
 					else if (this.imageNameList.length >= 1 && this.imageNameList[this.imageIndex].type != "nai") { // copy file
 						let image = this.imageNameList[this.imageIndex]
 						// console.log("filenames:::", image)
-						this.moveImage2MDDir(image, file)
+						this.pasteMultipleImage2MDDir(image, file)
 						this.imageIndex++
 					}
 					// else if (this.imageNameList.length === 1 && this.imageNameList[0].type != "nai") {
@@ -251,11 +251,9 @@ export default class ImageCPPlugin extends Plugin {
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 
-
 	}
 
-	async getRenameFilePath(mdFile: TFile, filename: string): Promise<[string, string]>  {
-		
+	async getRenameFilePath(mdFile: TFile, filename: string): Promise<[string, string]> {
 		const dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename
 		// console.log("isExist", dirPath)
 		if (!await this.app.vault.adapter.exists(dirPath)) {
@@ -269,11 +267,15 @@ export default class ImageCPPlugin extends Plugin {
 		// console.log("CURRENT IMAGE：");
 		// const filename = pasteImageInfo.filename
 		let newImagePath = path.join(dirPath, filename);
+		let newFilename = filename
 		// 2. 同名文件是否存在
 		if (await this.app.vault.adapter.exists(newImagePath)) {
 			// console.log("Exist:", newImagePath, )
-			newImagePath = path.join(dirPath, filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf(".")))
+			newFilename = filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf("."))
+			newImagePath = path.join(dirPath, newFilename)
 		}
+		const newLinkText = "![" + filename + "](" + encodeURI(path.join(mdFile.basename, newFilename)) + ")"
+		return [newImagePath, newLinkText]
 		// console.log("newPath", newImagePath)
 
 
@@ -281,16 +283,13 @@ export default class ImageCPPlugin extends Plugin {
 		// const srcLinkText = this.app.fileManager.generateMarkdownLink(image, path.join(dirPath, filename))
 		// ![](AAA测试插件/xinxiu@240.png)
 		// console.log(filename, this.MDTFile.basename, filename)
-		const newLinkText = "![" + filename + "](" + encodeURI(newImagePath) + ")"
 		// const newLinkText = "![" + filename + "](" + encodeURI(path.join(this.MDTFile.basename, filename)) + ")"
 		// console.log(srcLinkText, newLinkText)
-		return [newImagePath, newLinkText]
 	}
 
 
-	async moveImage2MDDir111(pasteImageInfo: PasteImageInfo | undefined, image: TFile) {
+	async pasteOneImage2MDDir(pasteImageInfo: PasteImageInfo | undefined, image: TFile) {
 		// console.log("run---------", pasteImageInfo, this.MDTFile)
-
 		if (!pasteImageInfo || !this.MDTFile) return;
 		// const view = this.app.workspace.getActiveViewOfType(MarkdownView)
 		// const file = view?.file
@@ -301,7 +300,7 @@ export default class ImageCPPlugin extends Plugin {
 		// this.app.fileManager.renameFile()
 		// 1. 同名文件夹是否存在
 
-		const [newImagePath, newLinkText ]=  await this.getRenameFilePath(this.MDTFile, pasteImageInfo.filename)
+		const [newImagePath, newLinkText] = await this.getRenameFilePath(this.MDTFile, pasteImageInfo.filename)
 
 		// const dirPath = this.MDTFile.parent?.path ? path.join(this.MDTFile.parent.path, this.MDTFile.basename) : this.MDTFile.basename
 		// // console.log("isExist", dirPath)
@@ -340,7 +339,7 @@ export default class ImageCPPlugin extends Plugin {
 			return
 		}
 
-				// 
+		// 
 
 
 		const cursor = editor.getCursor()
@@ -355,18 +354,17 @@ export default class ImageCPPlugin extends Plugin {
 		// editor.replaceSelection(newLinkText, srcLinkText)
 		// editor.replaceRange(newLinkText, editor.offsetToPos(editor.lastLine()), editor.offsetToPos(editor.lin).)
 		// console.log("length", this.insertTextList.length , this.imageNameList.length - 1, this.insertTextList.length === this.imageNameList.length - 1 )
-			// 	console.log("insert text---:", ele.dst, editor.getCursor())
-			// 	editor.replaceSelection(ele.dst)
-			// editor.replaceSelection(newLinkText, srcLinkText)
+		// 	console.log("insert text---:", ele.dst, editor.getCursor())
+		// 	editor.replaceSelection(ele.dst)
+		// editor.replaceSelection(newLinkText, srcLinkText)
 		// 和下面的editor.transaction等假
 		// setTimeout(() => {
-		editor.replaceRange(newLinkText, {...cursor, ch:0}, {...cursor, ch: line.length})
-			
+
 		// }, 500);
-			// editor.replaceRange(newLinkText, editor.offsetToPos( editor.lastLine()), editor.offsetToPos( editor.lastLine()+1), srcLinkText)
+		// editor.replaceRange(newLinkText, editor.offsetToPos( editor.lastLine()), editor.offsetToPos( editor.lastLine()+1), srcLinkText)
 		// } else {
-			// console.log("will insert:", newLinkText, cursor)
-			// this.insertTextList.push({src: srcLinkText, dst: newLinkText})
+		// console.log("will insert:", newLinkText, cursor)
+		// this.insertTextList.push({src: srcLinkText, dst: newLinkText})
 		// }
 		// editor.transaction({
 		// 	changes: [
@@ -377,15 +375,16 @@ export default class ImageCPPlugin extends Plugin {
 		// 		}
 		// 	]
 		// })
-				// this.app.fileManager.renameFile(image, newImagePath)
-		this.app.vault.rename(image, newImagePath)
+		// this.app.fileManager.renameFile(image, newImagePath)
+		await this.app.vault.rename(image, newImagePath)
+		editor.replaceRange(newLinkText, { ...cursor, ch: 0 }, { ...cursor, ch: line.length })
 
 
 
 	}
 
 
-	async moveImage2MDDir(pasteImageInfo: PasteImageInfo | undefined, image: TFile) {
+	async pasteMultipleImage2MDDir(pasteImageInfo: PasteImageInfo | undefined, image: TFile) {
 		// console.log("run---------", pasteImageInfo, this.MDTFile)
 
 		if (!pasteImageInfo || !this.MDTFile) return;
@@ -397,24 +396,23 @@ export default class ImageCPPlugin extends Plugin {
 		// this.app.vault.adapter.write()
 		// this.app.fileManager.renameFile()
 		// 1. 同名文件夹是否存在
-
 		const dirPath = this.MDTFile.parent?.path ? path.join(this.MDTFile.parent.path, this.MDTFile.basename) : this.MDTFile.basename
-		// console.log("isExist", dirPath)
-		if (!await this.app.vault.adapter.exists(dirPath)) {
-			// try create 同名文件夹
-			// console.log("not exist, will create")
-			await this.app.vault.createFolder(dirPath)
-		}
+		// // console.log("isExist", dirPath)
+		// if (!await this.app.vault.adapter.exists(dirPath)) {
+		// 	// try create 同名文件夹
+		// 	// console.log("not exist, will create")
+		// 	await this.app.vault.createFolder(dirPath)
+		// }
 		// console.log(pasteImageInfo)
 
 		// TODO本地or网络
 		// console.log("CURRENT IMAGE：");
 		const filename = pasteImageInfo.filename
-		let newImagePath = path.join(dirPath, filename);
+		// let newImagePath = path.join(dirPath, filename);
 		// 2. 同名文件是否存在
-		if (await this.app.vault.adapter.exists(newImagePath)) {
-			newImagePath = path.join(dirPath, filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf(".")))
-		}
+		// if (await this.app.vault.adapter.exists(newImagePath)) {
+		// 	newImagePath = path.join(dirPath, filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf(".")))
+		// }
 		// console.log("newPath", newImagePath)
 
 
@@ -422,8 +420,10 @@ export default class ImageCPPlugin extends Plugin {
 		const srcLinkText = this.app.fileManager.generateMarkdownLink(image, path.join(dirPath, filename))
 		// ![](AAA测试插件/xinxiu@240.png)
 		// console.log(filename, this.MDTFile.basename, filename)
-		const newLinkText = "![" + filename + "](" + encodeURI(path.join(this.MDTFile.basename, filename)) + ")"
+		// const newLinkText = "![" + filename + "](" + encodeURI(path.join(this.MDTFile.basename, filename)) + ")"
 		// console.log(srcLinkText, newLinkText)
+
+		const [newImagePath, newLinkText] = await this.getRenameFilePath(this.MDTFile, pasteImageInfo.filename)
 
 		// in case fileManager.renameFile may not update the internal link in the active file,
 		// we manually replace by manipulating the editor
@@ -435,7 +435,7 @@ export default class ImageCPPlugin extends Plugin {
 			return
 		}
 
-				// 
+		// 
 
 
 		const cursor = editor.getCursor()
@@ -450,9 +450,9 @@ export default class ImageCPPlugin extends Plugin {
 		// editor.replaceSelection(newLinkText, srcLinkText)
 		// editor.replaceRange(newLinkText, editor.offsetToPos(editor.lastLine()), editor.offsetToPos(editor.lin).)
 		// console.log("length", this.insertTextList.length , this.imageNameList.length - 1, this.insertTextList.length === this.imageNameList.length - 1 )
-		if (this.insertTextList.length === this.imageNameList.length - 1 ) {
+		if (this.insertTextList.length === this.imageNameList.length - 1) {
 			// editor.replaceRange(this.insertTextList.map(e=>e.dst).join("\n"), editor.getCursor())
-			let a = [] 
+			let a = []
 			// 批量插入，从本地粘贴一堆图片时，在处理最后一个图片处理时再批量插入images的链接到md文件中。
 			// this.insertTextList.forEach(ele => {
 			// 	console.log("insert text---:", ele.dst, editor.getCursor())
@@ -461,7 +461,7 @@ export default class ImageCPPlugin extends Plugin {
 			// for (var i=0; i<this.insertTextList.length; i++) {
 
 			// }
-			var content = this.insertTextList.map(x=>x.dst).join("\n")+"\n"+newLinkText+"\n"
+			var content = this.insertTextList.map(x => x.dst).join("\n") + "\n" + newLinkText + "\n"
 			// console.log("[lineNumber]", content, cursor)
 			// editor.replaceRange(content)
 			editor.undo()// !!!!!!!!!!!!!太他妈关键了！
@@ -469,10 +469,10 @@ export default class ImageCPPlugin extends Plugin {
 			// editor.replaceRange(content, {line:cursor.line-this.insertTextList.length*2, ch:0})//, {line:cursor.line, ch:this.insertTextList.last()!.dst.length})
 			editor.replaceSelection(content)
 
-			
+
 		} else {
 			// console.log("will insert:", newLinkText)
-			this.insertTextList.push({src: srcLinkText, dst: newLinkText})
+			this.insertTextList.push({ src: srcLinkText, dst: newLinkText })
 		}
 		//TODO清理无链接图片的功能！！！
 		// editor.transaction({
@@ -484,7 +484,7 @@ export default class ImageCPPlugin extends Plugin {
 		// 		}
 		// 	]
 		// })
-				// this.app.fileManager.renameFile(image, newImagePath)
+		// this.app.fileManager.renameFile(image, newImagePath)
 		this.app.vault.rename(image, newImagePath)
 
 
@@ -503,7 +503,7 @@ export default class ImageCPPlugin extends Plugin {
 		// console.log(evt.clipboardData?.types) // ['Files', '']
 		// console.log(evt.clipboardData?.items.length, evt.clipboardData?.items[0], evt.clipboardData?.items[1])
 		this.imageNameList = []
-			this.insertTextList = []
+		this.insertTextList = []
 
 		this.imageIndex = 0
 		const t_types = evt.clipboardData?.types
@@ -582,11 +582,11 @@ export default class ImageCPPlugin extends Plugin {
 
 
 
-	 async resolveAllImageInMD() {
+	async resolveAllImageInMD() {
 		const reg1: RegExp = /!\[\[(.*?)\]\]/
 		const mdFile = this.app.workspace.getActiveFile();
-				// const oldText = this.app.workspace.activeEditor()getValue();
-				// console.log(ctx.file, file, ctx.file === file) // true
+		// const oldText = this.app.workspace.activeEditor()getValue();
+		// console.log(ctx.file, file, ctx.file === file) // true
 		// const oldText = stripCr(await this.app.vault.read(mdFile!));
 		const editor = this.getActiveEditor(mdFile!.path);
 		if (!editor || !mdFile) return
@@ -601,21 +601,21 @@ export default class ImageCPPlugin extends Plugin {
 
 		// })
 		const embeds = []
-		
-		for (var i=fileCache.embeds.length-1; i>=0; i--) {
-				const e = fileCache.embeds[i]
-				embeds.push({
-					link: e.link,
-					sline: e.position.start.line,
-					sch: e.position.start.col,
-					eline: e.position.end.line,
-					ech: e.position.end.col,
-					origin: e.original,
-				})
+
+		for (var i = fileCache.embeds.length - 1; i >= 0; i--) {
+			const e = fileCache.embeds[i]
+			embeds.push({
+				link: e.link,
+				sline: e.position.start.line,
+				sch: e.position.start.col,
+				eline: e.position.end.line,
+				ech: e.position.end.col,
+				origin: e.original,
+			})
 		}
 		// console.log(fileCache.embeds, embeds)
 
-		for (var i=0; i<embeds.length; i++ ) {
+		for (var i = 0; i < embeds.length; i++) {
 			const embed = embeds[i]
 			if (!reg1.test(embed.origin)) {
 				// console.log("不用迁移: ", embed.origin, reg1.test(embed.origin));	
@@ -623,31 +623,31 @@ export default class ImageCPPlugin extends Plugin {
 			}
 
 			const linkRename = embed.link.split(" ").join("-") // "Pasted image 20230613094411.png" ---> "Pasted-image-20230613094411.png"
-			const [newImagePath, newLinkText ]=  await this.getRenameFilePath(mdFile!, linkRename)
+			const [newImagePath, newLinkText] = await this.getRenameFilePath(mdFile!, linkRename)
 			const imgfile = this.app.metadataCache.getFirstLinkpathDest(embed.link, mdFile!.path)
-			if (!imgfile){
+			if (!imgfile) {
 				// console.log("文件不存在:", embed.origin); 
 				// return
 			} else {
 				await this.app.vault.rename(imgfile, newImagePath)
 			}
-			
+
 			// console.log("INNFO]", imgfile, newImagePath, newLinkText)
-			
-			editor.replaceRange(newLinkText, 
-				{line: embed.sline, ch: embed.sch}, 
-				{line: embed.eline, ch: embed.ech}, 
-				)
-				// editor.transaction({
-				// 	changes: [
-				// 		{
-				// 			from: { ...cursor, ch: 0 },
-				// 			to: { ...cursor, ch: line.length },
-				// 			text: line.replace(srcLinkText, newLinkText),
-				// 		}
-				// 	]
-				// })
-				// 		this.app.fileManager.renameFile(image, newImagePath)
+
+			editor.replaceRange(newLinkText,
+				{ line: embed.sline, ch: embed.sch },
+				{ line: embed.eline, ch: embed.ech },
+			)
+			// editor.transaction({
+			// 	changes: [
+			// 		{
+			// 			from: { ...cursor, ch: 0 },
+			// 			to: { ...cursor, ch: line.length },
+			// 			text: line.replace(srcLinkText, newLinkText),
+			// 		}
+			// 	]
+			// })
+			// 		this.app.fileManager.renameFile(image, newImagePath)
 
 		}
 
