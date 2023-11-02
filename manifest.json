@@ -3,9 +3,8 @@
 	"name": "Image Classify Paste",
 	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "网络图片类比于typora的方式粘贴到本地，存放在当前md文档命名的文件夹里",
-	"author": "Obsidian",
-	"authorUrl": "https://github.com/ostoe/Ob-ImagePastePlugin",
-	"fundingUrl": "https://github.com/ostoe/Ob-ImagePastePlugin",
+	"description": "paste your image like typora, the image link name not `![[Paste xxx]]` but `![some name](relative-directory/xxx.png)`with a relative directory. 网络图片类比于typora的方式粘贴到本地，存放在当前md文档命名的文件夹里",
+	"author": "tianfx",
+	"authorUrl": "https://github.com/ostoe",
 	"isDesktopOnly": true
 }
