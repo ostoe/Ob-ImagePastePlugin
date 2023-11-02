@@ -1,6 +1,6 @@
 {
 	"id": "image-classify-paste",
-	"name": "A Image Classify Paste 智能粘贴图片1",
+	"name": "A Image Classify Paste 智能粘贴图片",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "网络图片类比于typora的方式粘贴到本地，存放在当前md文档命名的文件夹里",

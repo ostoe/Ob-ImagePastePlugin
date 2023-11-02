@@ -1,9 +1,10 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, Vault, TFile, TAbstractFile, PluginSettingTab, Setting, HeadingCache, EventRef, MarkdownFileInfo } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, Vault, TFile, TAbstractFile, PluginSettingTab, Setting, HeadingCache, EventRef, MarkdownFileInfo, getLinkpath } from 'obsidian';
 import {
 	debugLog, path, ConvertImage
 } from './utils';
 import { renderTemplate } from 'template';
 import { randomInt } from 'crypto';
+import { time } from 'console';
 // Remember to rename these classes and interfaces!
 const PASTED_IMAGE_PREFIX = 'Pasted image '
 // interface ImageCPPluginSettings {
@@ -75,15 +76,15 @@ export default class ImageCPPlugin extends Plugin {
 		await this.loadSettings();
 
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', '我是左侧小图标', (evt: MouseEvent) => {
-			// this.app.vault.adapter.exists()
-			// this.app.vault.adapter.write()
-			// this.app.fileManager.renameFile()
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+		// const ribbonIconEl = this.addRibbonIcon('dice', '我是左侧小图标', (evt: MouseEvent) => {
+		// 	// this.app.vault.adapter.exists()
+		// 	// this.app.vault.adapter.write()
+		// 	// this.app.fileManager.renameFile()
+		// 	// Called when the user clicks the icon.
+		// 	new Notice('This is a notice!');
+		// });
+		// // Perform additional things with the ribbon
+		// ribbonIconEl.addClass('my-plugin-ribbon-class');
 
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
@@ -91,41 +92,66 @@ export default class ImageCPPlugin extends Plugin {
 		statusBarItemEl.setText('Status Bar Text');
 
 		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
+		// this.addCommand({
+		// 	id: 'open-sample-modal-simple',
+		// 	name: 'Open sample modal (simple)',
+		// 	callback: () => {
+		// 		new SampleModal(this.app).open();
+		// 	}
+		// });
 		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
+		// this.addCommand({
+		// 	id: 'sample-editor-command',
+		// 	name: 'Sample editor command',
+		// 	editorCallback: (editor: Editor, view: MarkdownView) => {
+		// 		console.log(editor.getSelection());
+		// 		editor.replaceSelection('Sample Editor Command');
+		// 	}
+		// });
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
+		// this.addCommand({
+		// 	id: 'open-sample-modal-complex',
+		// 	name: 'Open sample modal (complex)',
+		// 	checkCallback: (checking: boolean) => {
+		// 		// Conditions to check
+		// 		const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		// 		if (markdownView) {
+		// 			// If checking is true, we're simply "checking" if the command can be run.
+		// 			// If checking is false, then we want to actually perform the operation.
+		// 			if (!checking) {
+		// 				new SampleModal(this.app).open();
+		// 			}
+
+		// 			// This command will only show up in Command Palette when the check function returns true
+		// 			return true;
+		// 		}
+		// 	}
+		// });
+
 		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
+			id: "re-construt-image",
+			name: "reconstrut-image将图片分散存储到各个文件里",
+			editorCallback: async (editor: Editor, ctx: MarkdownView | MarkdownFileInfo) => {
+
 				// Conditions to check
 				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+
+				// const file = this.app.workspace.getActiveFile();
+				// const oldText = editor.getValue();
+				// console.log(ctx.file, file, ctx.file === file) // true
+				// const oldText1 = stripCr(await this.app.vault.read(file!));
+				// console.log(oldText, oldText1)
 				if (markdownView) {
+				await this.resolveAllImageInMD()
+					
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
 					// This command will only show up in Command Palette when the check function returns true
 					return true;
 				}
 			}
 		});
+
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
@@ -133,14 +159,14 @@ export default class ImageCPPlugin extends Plugin {
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
 		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
+			// console.log('click', evt);
 		});
 
 
 		this.registerEvent(
 
 			this.app.vault.on('create', (file) => {
-				console.log("----create file---", this.imageNameList)
+				// console.log("----create file---", this.imageNameList)
 				// debugLog('file created', file)
 				if (!(file instanceof TFile)) return
 				const timeGapMs = (new Date().getTime()) - file.stat.ctime
@@ -149,7 +175,7 @@ export default class ImageCPPlugin extends Plugin {
 				// always ignore markdown file creation
 				if (isMarkdownFile(file)) return
 				if (file instanceof TFile) {
-					if (this.imageNameList.length === 0) {
+					if (this.imageNameList == null || this.imageNameList.length === 0) {
 						// page other file, not image
 						return
 					} else if (this.imageNameList.length === 1 && this.imageNameList[0].type != "nai") {
@@ -158,7 +184,7 @@ export default class ImageCPPlugin extends Plugin {
 					} 
 					else if (this.imageNameList.length >= 1 && this.imageNameList[this.imageIndex].type != "nai") { // copy file
 						let image = this.imageNameList[this.imageIndex]
-						console.log("filenames:::", image)
+						// console.log("filenames:::", image)
 						this.moveImage2MDDir(image, file)
 						this.imageIndex++
 					}
@@ -196,31 +222,31 @@ export default class ImageCPPlugin extends Plugin {
 		// this.registerEvent(this.app.workspace.on('editor-drop', this.customDropEventListener))
 
 
-		this.registerEvent(
-			this.app.workspace.on("file-menu", (menu, file) => {
-				menu.addItem((item) => {
-					item
-						.setTitle("Print file path 👈")
-						.setIcon("document")
-						.onClick(async () => {
-							new Notice(file.path);
-						});
-				});
-			})
-		);
+		// this.registerEvent(
+		// 	this.app.workspace.on("file-menu", (menu, file) => {
+		// 		menu.addItem((item) => {
+		// 			item
+		// 				.setTitle("Print file path 👈")
+		// 				.setIcon("document")
+		// 				.onClick(async () => {
+		// 					new Notice(file.path);
+		// 				});
+		// 		});
+		// 	})
+		// );
 
-		this.registerEvent(
-			this.app.workspace.on("editor-menu", (menu, editor, view) => {
-				menu.addItem((item) => {
-					item
-						.setTitle("Print file path 👈")
-						.setIcon("document")
-						.onClick(async () => {
-							new Notice(view.file.path);
-						});
-				});
-			})
-		);
+		// this.registerEvent(
+		// 	this.app.workspace.on("editor-menu", (menu, editor, view) => {
+		// 		menu.addItem((item) => {
+		// 			item
+		// 				.setTitle("Print file path 👈")
+		// 				.setIcon("document")
+		// 				.onClick(async () => {
+		// 					new Notice(view.file.path);
+		// 				});
+		// 		});
+		// 	})
+		// );
 
 		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
 		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
@@ -228,9 +254,42 @@ export default class ImageCPPlugin extends Plugin {
 
 	}
 
+	async getRenameFilePath(mdFile: TFile, filename: string): Promise<[string, string]>  {
+		
+		const dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename
+		// console.log("isExist", dirPath)
+		if (!await this.app.vault.adapter.exists(dirPath)) {
+			// try create 同名文件夹
+			// console.log("not exist, will create")
+			await this.app.vault.createFolder(dirPath)
+		}
+		// console.log(pasteImageInfo)
+
+		// TODO本地or网络
+		// console.log("CURRENT IMAGE：");
+		// const filename = pasteImageInfo.filename
+		let newImagePath = path.join(dirPath, filename);
+		// 2. 同名文件是否存在
+		if (await this.app.vault.adapter.exists(newImagePath)) {
+			// console.log("Exist:", newImagePath, )
+			newImagePath = path.join(dirPath, filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf(".")))
+		}
+		// console.log("newPath", newImagePath)
+
+
+		// 3. 手动更改文件名
+		// const srcLinkText = this.app.fileManager.generateMarkdownLink(image, path.join(dirPath, filename))
+		// ![](AAA测试插件/xinxiu@240.png)
+		// console.log(filename, this.MDTFile.basename, filename)
+		const newLinkText = "![" + filename + "](" + encodeURI(newImagePath) + ")"
+		// const newLinkText = "![" + filename + "](" + encodeURI(path.join(this.MDTFile.basename, filename)) + ")"
+		// console.log(srcLinkText, newLinkText)
+		return [newImagePath, newLinkText]
+	}
+
 
 	async moveImage2MDDir111(pasteImageInfo: PasteImageInfo | undefined, image: TFile) {
-		console.log("run---------", pasteImageInfo, this.MDTFile)
+		// console.log("run---------", pasteImageInfo, this.MDTFile)
 
 		if (!pasteImageInfo || !this.MDTFile) return;
 		// const view = this.app.workspace.getActiveViewOfType(MarkdownView)
@@ -242,32 +301,34 @@ export default class ImageCPPlugin extends Plugin {
 		// this.app.fileManager.renameFile()
 		// 1. 同名文件夹是否存在
 
-		const dirPath = this.MDTFile.parent?.path ? path.join(this.MDTFile.parent.path, this.MDTFile.basename) : this.MDTFile.basename
-		// console.log("isExist", dirPath)
-		if (!await this.app.vault.adapter.exists(dirPath)) {
-			// try create 同名文件夹
-			console.log("not exist, will create")
-			await this.app.vault.createFolder(dirPath)
-		}
-		console.log(pasteImageInfo)
+		const [newImagePath, newLinkText ]=  await this.getRenameFilePath(this.MDTFile, pasteImageInfo.filename)
 
-		// TODO本地or网络
-		// console.log("CURRENT IMAGE：");
-		const filename = pasteImageInfo.filename
-		let newImagePath = path.join(dirPath, filename);
-		// 2. 同名文件是否存在
-		if (await this.app.vault.adapter.exists(newImagePath)) {
-			newImagePath = path.join(dirPath, filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf(".")))
-		}
-		console.log("newPath", newImagePath)
+		// const dirPath = this.MDTFile.parent?.path ? path.join(this.MDTFile.parent.path, this.MDTFile.basename) : this.MDTFile.basename
+		// // console.log("isExist", dirPath)
+		// if (!await this.app.vault.adapter.exists(dirPath)) {
+		// 	// try create 同名文件夹
+		// 	console.log("not exist, will create")
+		// 	await this.app.vault.createFolder(dirPath)
+		// }
+		// console.log(pasteImageInfo)
+
+		// // TODO本地or网络
+		// // console.log("CURRENT IMAGE：");
+		// const filename = pasteImageInfo.filename
+		// let newImagePath = path.join(dirPath, filename);
+		// // 2. 同名文件是否存在
+		// if (await this.app.vault.adapter.exists(newImagePath)) {
+		// 	newImagePath = path.join(dirPath, filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf(".")))
+		// }
+		// console.log("newPath", newImagePath)
 
 
-		// 3. 手动更改文件名
-		const srcLinkText = this.app.fileManager.generateMarkdownLink(image, path.join(dirPath, filename))
+		// 3. 手动更改文件名 ?? 这句话的作用是？
+		// const srcLinkText = this.app.fileManager.generateMarkdownLink(image, path.join(dirPath, filename))
 		// ![](AAA测试插件/xinxiu@240.png)
-		console.log(filename, this.MDTFile.basename, filename)
-		const newLinkText = "![" + filename + "](" + encodeURI(path.join(this.MDTFile.basename, filename)) + ")"
-		console.log(srcLinkText, newLinkText)
+		// console.log(filename, this.MDTFile.basename, filename)
+		// const newLinkText = "![" + filename + "](" + encodeURI(path.join(this.MDTFile.basename, filename)) + ")"
+		// // console.log(srcLinkText, newLinkText)
 
 		// in case fileManager.renameFile may not update the internal link in the active file,
 		// we manually replace by manipulating the editor
@@ -325,7 +386,7 @@ export default class ImageCPPlugin extends Plugin {
 
 
 	async moveImage2MDDir(pasteImageInfo: PasteImageInfo | undefined, image: TFile) {
-		console.log("run---------", pasteImageInfo, this.MDTFile)
+		// console.log("run---------", pasteImageInfo, this.MDTFile)
 
 		if (!pasteImageInfo || !this.MDTFile) return;
 		// const view = this.app.workspace.getActiveViewOfType(MarkdownView)
@@ -341,10 +402,10 @@ export default class ImageCPPlugin extends Plugin {
 		// console.log("isExist", dirPath)
 		if (!await this.app.vault.adapter.exists(dirPath)) {
 			// try create 同名文件夹
-			console.log("not exist, will create")
+			// console.log("not exist, will create")
 			await this.app.vault.createFolder(dirPath)
 		}
-		console.log(pasteImageInfo)
+		// console.log(pasteImageInfo)
 
 		// TODO本地or网络
 		// console.log("CURRENT IMAGE：");
@@ -354,15 +415,15 @@ export default class ImageCPPlugin extends Plugin {
 		if (await this.app.vault.adapter.exists(newImagePath)) {
 			newImagePath = path.join(dirPath, filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf(".")))
 		}
-		console.log("newPath", newImagePath)
+		// console.log("newPath", newImagePath)
 
 
 		// 3. 手动更改文件名
 		const srcLinkText = this.app.fileManager.generateMarkdownLink(image, path.join(dirPath, filename))
 		// ![](AAA测试插件/xinxiu@240.png)
-		console.log(filename, this.MDTFile.basename, filename)
+		// console.log(filename, this.MDTFile.basename, filename)
 		const newLinkText = "![" + filename + "](" + encodeURI(path.join(this.MDTFile.basename, filename)) + ")"
-		console.log(srcLinkText, newLinkText)
+		// console.log(srcLinkText, newLinkText)
 
 		// in case fileManager.renameFile may not update the internal link in the active file,
 		// we manually replace by manipulating the editor
@@ -379,7 +440,7 @@ export default class ImageCPPlugin extends Plugin {
 
 		const cursor = editor.getCursor()
 		const line = editor.getLine(cursor.line)
-		console.log('current line', line, srcLinkText, newLinkText)
+		// console.log('current line', line, srcLinkText, newLinkText)
 		// console.log('editor context', cursor, )
 		// editor.lastLine()
 		// editor.undo()
@@ -388,11 +449,11 @@ export default class ImageCPPlugin extends Plugin {
 		// editor.setLine(editor.lastLine(), "-")
 		// editor.replaceSelection(newLinkText, srcLinkText)
 		// editor.replaceRange(newLinkText, editor.offsetToPos(editor.lastLine()), editor.offsetToPos(editor.lin).)
-		console.log("length", this.insertTextList.length , this.imageNameList.length - 1, this.insertTextList.length === this.imageNameList.length - 1 )
+		// console.log("length", this.insertTextList.length , this.imageNameList.length - 1, this.insertTextList.length === this.imageNameList.length - 1 )
 		if (this.insertTextList.length === this.imageNameList.length - 1 ) {
 			// editor.replaceRange(this.insertTextList.map(e=>e.dst).join("\n"), editor.getCursor())
-			let a = []
-			
+			let a = [] 
+			// 批量插入，从本地粘贴一堆图片时，在处理最后一个图片处理时再批量插入images的链接到md文件中。
 			// this.insertTextList.forEach(ele => {
 			// 	console.log("insert text---:", ele.dst, editor.getCursor())
 			// 	editor.replaceSelection(ele.dst)
@@ -401,7 +462,7 @@ export default class ImageCPPlugin extends Plugin {
 
 			// }
 			var content = this.insertTextList.map(x=>x.dst).join("\n")+"\n"+newLinkText+"\n"
-			console.log("[lineNumber]", content, cursor)
+			// console.log("[lineNumber]", content, cursor)
 			// editor.replaceRange(content)
 			editor.undo()// !!!!!!!!!!!!!太他妈关键了！
 			// 不好用，莫名其妙会写到系统自动写的前面去
@@ -410,7 +471,7 @@ export default class ImageCPPlugin extends Plugin {
 
 			
 		} else {
-			console.log("will insert:", newLinkText)
+			// console.log("will insert:", newLinkText)
 			this.insertTextList.push({src: srcLinkText, dst: newLinkText})
 		}
 		//TODO清理无链接图片的功能！！！
@@ -484,7 +545,7 @@ export default class ImageCPPlugin extends Plugin {
 							imageName += `.${extension}`
 							// this.imageNameList.push(imageName ) 规范写法！
 						} else {
-							console.log(s);
+							// console.log(s);
 							new Notice("解析图片名失败，使用随机名")
 						}
 
@@ -517,6 +578,79 @@ export default class ImageCPPlugin extends Plugin {
 		// console.log("---:", this.imageNameList)
 		// console.log(evt, this, markdownView, )
 		// evt.preventDefault();
+	}
+
+
+
+	 async resolveAllImageInMD() {
+		const reg1: RegExp = /!\[\[(.*?)\]\]/
+		const mdFile = this.app.workspace.getActiveFile();
+				// const oldText = this.app.workspace.activeEditor()getValue();
+				// console.log(ctx.file, file, ctx.file === file) // true
+		// const oldText = stripCr(await this.app.vault.read(mdFile!));
+		const editor = this.getActiveEditor(mdFile!.path);
+		if (!editor || !mdFile) return
+		// console.log(mdFile)
+		const fileCache = this.app.metadataCache.getFileCache(mdFile!)
+		const deDuplicateMap: Map<string, string> = new Map() //
+		if (!fileCache?.embeds?.length) return
+		// for (var i=fileCache?.embeds?.length-1; i>=0; i++) {
+		// 	var embed = fileCache.embeds[i]
+		// }
+		// fileCache.embeds.reverse().reduce(()=> {
+
+		// })
+		const embeds = []
+		
+		for (var i=fileCache.embeds.length-1; i>=0; i--) {
+				const e = fileCache.embeds[i]
+				embeds.push({
+					link: e.link,
+					sline: e.position.start.line,
+					sch: e.position.start.col,
+					eline: e.position.end.line,
+					ech: e.position.end.col,
+					origin: e.original,
+				})
+		}
+		// console.log(fileCache.embeds, embeds)
+
+		for (var i=0; i<embeds.length; i++ ) {
+			const embed = embeds[i]
+			if (!reg1.test(embed.origin)) {
+				// console.log("不用迁移: ", embed.origin, reg1.test(embed.origin));	
+				continue;
+			}
+
+			const linkRename = embed.link.split(" ").join("-") // "Pasted image 20230613094411.png" ---> "Pasted-image-20230613094411.png"
+			const [newImagePath, newLinkText ]=  await this.getRenameFilePath(mdFile!, linkRename)
+			const imgfile = this.app.metadataCache.getFirstLinkpathDest(embed.link, mdFile!.path)
+			if (!imgfile){
+				// console.log("文件不存在:", embed.origin); 
+				// return
+			} else {
+				await this.app.vault.rename(imgfile, newImagePath)
+			}
+			
+			// console.log("INNFO]", imgfile, newImagePath, newLinkText)
+			
+			editor.replaceRange(newLinkText, 
+				{line: embed.sline, ch: embed.sch}, 
+				{line: embed.eline, ch: embed.ech}, 
+				)
+				// editor.transaction({
+				// 	changes: [
+				// 		{
+				// 			from: { ...cursor, ch: 0 },
+				// 			to: { ...cursor, ch: line.length },
+				// 			text: line.replace(srcLinkText, newLinkText),
+				// 		}
+				// 	]
+				// })
+				// 		this.app.fileManager.renameFile(image, newImagePath)
+
+		}
+
 	}
 
 
@@ -619,7 +753,7 @@ export default class ImageCPPlugin extends Plugin {
 		}
 		// this.debuglog1(activeFile.basename, activeFile.name, activeFile.parent.name)
 		const { stem, newName, isMeaningful } = this.generateNewName(file, activeFile) // new
-		this.debuglog1('newName:', stem, newName, isMeaningful, file.name, JSON.stringify(file), this.imageFileNames.join("IIII")) // 工具， 工具.png true ????
+		// this.debuglog1('newName:', stem, newName, isMeaningful, file.name, JSON.stringify(file), this.imageFileNames.join("IIII")) // 工具， 工具.png true ????
 
 
 		this.renameFile(file, newName, activeFile.path, true)
@@ -636,7 +770,7 @@ export default class ImageCPPlugin extends Plugin {
 			// view?.editor.replaceSelection("\n```\n")
 		} else {
 			new Notice(args.join(", "))
-			console.log((new Date()).toISOString().slice(11, 23), ...args)
+			// console.log((new Date()).toISOString().slice(11, 23), ...args)
 		}
 
 		// editor.replaceSelection
@@ -656,7 +790,7 @@ export default class ImageCPPlugin extends Plugin {
 			frontmatter = fileCache.frontmatter
 			imageNameKey = frontmatter?.imageNameKey || ''
 			firstHeading = getFirstHeading(fileCache.headings)
-			this.debuglog1('frontmatter', imageNameKey, firstHeading, fileCache.frontmatter, JSON.stringify(fileCache))
+			// this.debuglog1('frontmatter', imageNameKey, firstHeading, fileCache.frontmatter, JSON.stringify(fileCache))
 		} else {
 			console.warn('could not get file cache from active file', activeFile.name)
 		}
@@ -671,7 +805,7 @@ export default class ImageCPPlugin extends Plugin {
 			},
 			frontmatter)
 		const meaninglessRegex = new RegExp(`[${this.settings.dupNumberDelimiter}\\s]`, 'gm')
-		this.debuglog1("stem: ", stem)
+		// this.debuglog1("stem: ", stem)
 		return {
 			stem,
 			newName: stem + '.' + file.extension,
@@ -696,7 +830,7 @@ export default class ImageCPPlugin extends Plugin {
 	async renameFile(file: TFile, inputNewName: string, sourcePath: string, replaceCurrentLine?: boolean) {
 		// deduplicate name
 		const { name: newName } = await this.deduplicateNewName(inputNewName, file)
-		this.debuglog1('deduplicated newName:', newName)
+		// this.debuglog1('deduplicated newName:', newName)
 		const originName = file.name
 
 		// generate linkText using Obsidian API, linkText is either  ![](filename.png) or ![[filename.png]] according to the "Use [[Wikilinks]]" setting.
@@ -719,7 +853,7 @@ export default class ImageCPPlugin extends Plugin {
 		// we manually replace the current line by manipulating the editor
 
 		const newLinkText = this.app.fileManager.generateMarkdownLink(file, sourcePath)
-		this.debuglog1('replace text', linkText, newLinkText)
+		// this.debuglog1('replace text', linkText, newLinkText)
 
 		const editor = this.getActiveEditor()
 		if (!editor) {
@@ -730,7 +864,7 @@ export default class ImageCPPlugin extends Plugin {
 		const cursor = editor.getCursor()
 		const line = editor.getLine(cursor.line)
 		const replacedLine = line.replace(linkText, newLinkText)
-		this.debuglog1('current line -> replaced line', line, replacedLine)
+		// this.debuglog1('current line -> replaced line', line, replacedLine)
 		// console.log('editor context', cursor, )
 		editor.transaction({
 			changes: [
