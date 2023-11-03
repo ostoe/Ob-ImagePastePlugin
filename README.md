@@ -1,4 +1,4 @@
-# Obsidian plugin
+# Image Paste Plugin With Obsidian
 
 # 能够像Typora一样粘贴网络图片、本地图片, This plugin let you paste you image like typora, and can reconstructor you markdown file history.
 # option steop
