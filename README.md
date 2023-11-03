@@ -4,13 +4,14 @@
 # 能够像Typora一样粘贴网络图片、本地图片
 # option steop
 supose there is a MyTest.md file, I will do with some step:
-1. copy network image
-2. paste it
-3. the plugin will auto save image which path was `MyTest/image_filename.png`
+1. Copy network image
+2. Paste it
+3. The plugin will auto create MyTest directory
+4. Save image which path was `MyTest/image_filename.png`
 
 you paste network image
 before  :
-`![[Paste Image]]`
+`![[Paste Image xxx.png]]`
 after:
 `![imgxxx](md_file_dir/xxxx.png)`
 
