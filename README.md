@@ -1,9 +1,9 @@
 # Obsidian Image ClassifyPaste Plugin
 
-## 1. This plugin let you paste you able image like typora, and can reconstructor you markdown file history, also support paste multi-image copy from local image. 
+## 1. This plugin able let you paste image like typora, also support paste multi-image copy from local image,and can reconstructor you markdown file history,
 ### operate steop
-suppose there is a MyTest.md file, I will do with some step:
-1. Copy network image
+Suppose there is a `MyTest.md` file, I will do with some step:
+1. Copy network image from Chrome Browers
 2. Paste in `Mytest.md` markdown file
 3. The plugin will auto create `MyTest` directory which name same to markdown file.
 4. Save image which path was `MyTest/image_filename.png`
@@ -13,8 +13,8 @@ before  :
 `![[Paste Image xxx.png]]`
 after:
 `![imgxxx](md_file_dir/xxxx.png)`
-## 2. resolve history image path issue.
-suppose there is a Mytest.md file, which has some content:
+## 2. Resolve history image path issue.
+Suppose there is a Mytest.md file, which has some content:
 ```md
 ![[Paste Image xxxx1.png]]
 ![[Paste Image xxxx2.png]]
