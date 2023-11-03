@@ -5,7 +5,8 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, Vault, TFile, TAbstra
 import { renderTemplate } from 'template';
 import { randomInt } from 'crypto';
 import { time } from 'console';
-import * as path from 'path';
+import { path } from 'src/utils';
+// import * as path from 'path';
 // Remember to rename these classes and interfaces!
 const PASTED_IMAGE_PREFIX = 'Pasted image '
 // interface ImageCPPluginSettings {
@@ -57,6 +58,16 @@ type PasteImageInfo = {
 type InsertText = {
 	src: string;
 	dst: string;
+}
+
+type updateText = {
+	link: string
+	sline: number,
+	sch: number,
+	eline: number,
+	ech: number,
+	origin: string
+	tar_origin: string
 }
 
 
@@ -500,8 +511,8 @@ export default class ImageCPPlugin extends Plugin {
 		markdownView: MarkdownView,
 	) => {
 
-		// console.log(editor, markdownView.file)  // md file.
-		// console.log(evt.clipboardData?.files)  //
+		// console.log(editor, markdownView.file, evt,)  // md file.
+		console.log(evt.clipboardData?.files)  //
 		// console.log(evt.clipboardData?.types) // ['Files', '']
 		// console.log(evt.clipboardData?.items.length, evt.clipboardData?.items[0], evt.clipboardData?.items[1])
 		this.imageNameList = []
@@ -620,7 +631,7 @@ export default class ImageCPPlugin extends Plugin {
 		for (var i = 0; i < embeds.length; i++) {
 			const embed = embeds[i]
 			if (!reg1.test(embed.origin)) {
-				// console.log("不用迁移: ", embed.origin, reg1.test(embed.origin));	
+				console.log("不用迁移: ", embed.origin, reg1.test(embed.origin));	
 				continue;
 			}
 
@@ -652,6 +663,9 @@ export default class ImageCPPlugin extends Plugin {
 			// 		this.app.fileManager.renameFile(image, newImagePath)
 
 		}
+
+		new Notice("Resolve Images Link Completed")
+
 
 	}
 

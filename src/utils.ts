@@ -73,10 +73,10 @@ export const path = {
 	},
 
 	// return extension without dot, e.g. 'jpg'
-	extension(fullpath: string): string {
-		const positions = [...fullpath.matchAll(new RegExp('\\.', 'gi'))].map(a => a.index)
-		return  ""// fullpath.slice(positions[positions.length - 1] + 1)
-	},
+	// extension(fullpath: string): string {
+	// 	const positions = [...fullpath.matchAll(new RegExp('\\.', 'gi'))].map(a => a.index)
+	// 	return  fullpath.slice(positions[positions.length - 1] + 1)
+	// },
 }
 
 const filenameNotAllowedChars = /[^a-zA-Z0-9~`!@$&*()\-_=+{};'",<.>? ]/g
