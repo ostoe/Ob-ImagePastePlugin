@@ -12,7 +12,7 @@ const PASTED_IMAGE_PREFIX = 'Pasted image '
 // interface ImageCPPluginSettings {
 // 	mySetting: string;
 // }
-
+const reg1: RegExp = /!\[\[(.*?)\]\]/
 /*
 ------------- Cmd + Opt+ I on macOS or Ctrl + Shift + I on Windows or Linux.
 */
@@ -44,7 +44,9 @@ const DEFAULT_SETTINGS: PluginSettings = {
 
 const IMAGE_EXTENTION_NAMES = ["image/apng", "image/avif", "image/bmp", "image/gif", "image/x-icon", "image/jpeg", "image/png", "image/svg+xml", "image/tiff", "image/webp", "image/xbm, image-xbitmap"]
 
-
+const IMAGE_EXTS = [
+	'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg',
+]
 
 type PasteImageType = "local" | "network" | "nai" // nai means not a image    local： 本地图片辅助粘贴和截图的
 
@@ -60,15 +62,6 @@ type InsertText = {
 	dst: string;
 }
 
-type updateText = {
-	link: string
-	sline: number,
-	sch: number,
-	eline: number,
-	ech: number,
-	origin: string
-	tar_origin: string
-}
 
 
 export default class ImageCPPlugin extends Plugin {
@@ -451,9 +444,8 @@ export default class ImageCPPlugin extends Plugin {
 		// 
 
 
-		const cursor = editor.getCursor()
-		const line = editor.getLine(cursor.line)
-		// console.log('current line', line, srcLinkText, newLinkText)
+		this.app.vault.rename(image, newImagePath)
+		
 		// console.log('editor context', cursor, )
 		// editor.lastLine()
 		// editor.undo()
@@ -464,8 +456,27 @@ export default class ImageCPPlugin extends Plugin {
 		// editor.replaceRange(newLinkText, editor.offsetToPos(editor.lastLine()), editor.offsetToPos(editor.lin).)
 		// console.log("length", this.insertTextList.length , this.imageNameList.length - 1, this.insertTextList.length === this.imageNameList.length - 1 )
 		if (this.insertTextList.length === this.imageNameList.length - 1) {
+			
+			const cursor = editor.getCursor()
+			const line = editor.getLine(cursor.line)
+			// console.log('current line', line, cursor, editor.getCursor("anchor"), editor.getCursor("from"), editor.getCursor("to"))
+			
+			setTimeout(() => {
+				// console.log("embeds", this.app.metadataCache.getFileCache(this.getActiveFile()!)?.embeds)
+			}, 1000);
 			// editor.replaceRange(this.insertTextList.map(e=>e.dst).join("\n"), editor.getCursor())
-			let a = []
+			const  lastStartInsertLine = cursor.line - (this.imageNameList.length-1)*2
+			const lastStartInsertLineContent =  editor.getLine(lastStartInsertLine)
+			var sp = {line:0, ch:0};
+			if (lastStartInsertLineContent === this.insertTextList[0].src) {
+				sp = {line: lastStartInsertLine, ch: 0}
+			} else if (lastStartInsertLineContent.endsWith(this.insertTextList[0].src) && lastStartInsertLineContent.length >= this.insertTextList[0].src.length) {
+				sp = {line: lastStartInsertLine, ch: lastStartInsertLineContent.length - this.insertTextList[0].src.length}
+			}
+			var content = this.insertTextList.map(x => x.dst).join("\n\n") + "\n\n" + newLinkText + "\n"
+
+			editor.replaceRange(content, {line: sp.line, ch: sp.ch}, cursor)//, {line:cursor.line, ch:this.insertTextList.last()!.dst.length})
+			
 			// 批量插入，从本地粘贴一堆图片时，在处理最后一个图片处理时再批量插入images的链接到md文件中。
 			// this.insertTextList.forEach(ele => {
 			// 	console.log("insert text---:", ele.dst, editor.getCursor())
@@ -474,17 +485,15 @@ export default class ImageCPPlugin extends Plugin {
 			// for (var i=0; i<this.insertTextList.length; i++) {
 
 			// }
-			var content = this.insertTextList.map(x => x.dst).join("\n") + "\n" + newLinkText + "\n"
 			// console.log("[lineNumber]", content, cursor)
 			// editor.replaceRange(content)
-			editor.undo()// !!!!!!!!!!!!!太他妈关键了！
+			// editor.undo()// !!!!!!!!!!!!!太他妈关键了！
 			// 不好用，莫名其妙会写到系统自动写的前面去
-			// editor.replaceRange(content, {line:cursor.line-this.insertTextList.length*2, ch:0})//, {line:cursor.line, ch:this.insertTextList.last()!.dst.length})
-			editor.replaceSelection(content)
+			// editor.replaceSelection(content)
 
 
 		} else {
-			// console.log("will insert:", newLinkText)
+			// console.log("will insert:", srcLinkText, "--->", newLinkText)
 			this.insertTextList.push({ src: srcLinkText, dst: newLinkText })
 		}
 		//TODO清理无链接图片的功能！！！
@@ -498,10 +507,6 @@ export default class ImageCPPlugin extends Plugin {
 		// 	]
 		// })
 		// this.app.fileManager.renameFile(image, newImagePath)
-		this.app.vault.rename(image, newImagePath)
-
-
-
 	}
 
 
@@ -512,7 +517,7 @@ export default class ImageCPPlugin extends Plugin {
 	) => {
 
 		// console.log(editor, markdownView.file, evt,)  // md file.
-		console.log(evt.clipboardData?.files)  //
+		// console.log(evt.clipboardData?.files)  //
 		// console.log(evt.clipboardData?.types) // ['Files', '']
 		// console.log(evt.clipboardData?.items.length, evt.clipboardData?.items[0], evt.clipboardData?.items[1])
 		this.imageNameList = []
@@ -596,7 +601,7 @@ export default class ImageCPPlugin extends Plugin {
 
 
 	async resolveAllImageInMD() {
-		const reg1: RegExp = /!\[\[(.*?)\]\]/
+
 		const mdFile = this.app.workspace.getActiveFile();
 		// const oldText = this.app.workspace.activeEditor()getValue();
 		// console.log(ctx.file, file, ctx.file === file) // true
@@ -605,7 +610,7 @@ export default class ImageCPPlugin extends Plugin {
 		if (!editor || !mdFile) return
 		// console.log(mdFile)
 		const fileCache = this.app.metadataCache.getFileCache(mdFile!)
-		const deDuplicateMap: Map<string, string> = new Map() //
+		// const deDuplicateMap: Map<string, string> = new Map() //
 		if (!fileCache?.embeds?.length) return
 		// for (var i=fileCache?.embeds?.length-1; i>=0; i++) {
 		// 	var embed = fileCache.embeds[i]
@@ -614,7 +619,6 @@ export default class ImageCPPlugin extends Plugin {
 
 		// })
 		const embeds = []
-
 		for (var i = fileCache.embeds.length - 1; i >= 0; i--) {
 			const e = fileCache.embeds[i]
 			embeds.push({
@@ -630,8 +634,8 @@ export default class ImageCPPlugin extends Plugin {
 
 		for (var i = 0; i < embeds.length; i++) {
 			const embed = embeds[i]
-			if (!reg1.test(embed.origin)) {
-				console.log("不用迁移: ", embed.origin, reg1.test(embed.origin));	
+			if (!reg1.test(embed.origin) || !isImageWithLink(embed.link)) {
+				console.log("不用迁移: ", embed.origin, reg1.test(embed.origin));
 				continue;
 			}
 
@@ -835,9 +839,11 @@ function isMarkdownFile(file: TAbstractFile): boolean {
 	return false
 }
 
-const IMAGE_EXTS = [
-	'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg',
-]
+
+
+function isImageWithLink(link: string): boolean {
+	return IMAGE_EXTS.contains(  link.split(".").last()!.toLowerCase())
+}
 
 function isImage(file: TAbstractFile): boolean {
 	if (file instanceof TFile) {
