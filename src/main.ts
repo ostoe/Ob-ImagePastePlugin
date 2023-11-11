@@ -2,7 +2,7 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, Vault, TFile, TAbstra
 // import {
 // 	debugLog, path, ConvertImage
 // } from './utils';
-import { renderTemplate } from 'template';
+// import { renderTemplate } from 'template';
 import { randomInt } from 'crypto';
 import { time } from 'console';
 import { path } from 'src/utils';
