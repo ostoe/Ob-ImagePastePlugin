@@ -6,6 +6,7 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, Vault, TFile, TAbstra
 import { randomInt } from 'crypto';
 import { time } from 'console';
 import { path } from 'src/utils';
+import { PasteSettingsTab } from './settings';
 // import * as path from 'path';
 // Remember to rename these classes and interfaces!
 // const PASTED_IMAGE_PREFIX = 'Pasted image '
@@ -18,6 +19,9 @@ const reg1: RegExp = /!\[\[(.*?)\]\]/
 */
 
 interface PluginSettings {
+	IsShowCustomPath: boolean
+	PasteImageOption: string
+	CustomPath: string
 	// {{imageNameKey}}-{{DATE:YYYYMMDD}}
 	defaultSetting: string
 	imageNamePattern: string
@@ -40,6 +44,9 @@ const DEFAULT_SETTINGS: PluginSettings = {
 	handleAllAttachments: false,
 	excludeExtensionPattern: '',
 	disableRenameNotice: false,
+	IsShowCustomPath: false,
+	PasteImageOption: 'default',
+	CustomPath: './'
 }
 
 const IMAGE_EXTENTION_NAMES = ["image/apng", "image/avif", "image/bmp", "image/gif", "image/x-icon", "image/jpeg", "image/png", "image/svg+xml", "image/tiff", "image/webp", "image/xbm, image-xbitmap"]
@@ -65,6 +72,11 @@ type InsertText = {
 
 
 export default class ImageCPPlugin extends Plugin {
+  writeOptions(arg0: string ) {
+    console.log(arg0)
+  }
+  	public toggle: true;
+	// public settings	: ISettings;
 	public settings: PluginSettings;
 	public imageNameList: PasteImageInfo[];
 	private insertTextList: InsertText[] = [];
@@ -73,13 +85,14 @@ export default class ImageCPPlugin extends Plugin {
 	private MDTFile: TFile;
 	imageFileNames: any;
 	async onload() {
+
+		await this.loadSettings();
 		if (Platform.isWin) {
 			this.researchFromImageSrc = /<img src="(.*?)" alt="(.*?)"\/><|<img src="(.*?)"\/></
 		} else if (Platform.isMacOS ) { // || Platform.isLinux
 			this.researchFromImageSrc = /<img src="(.*?)"\/>$/
 		}
 		// this.imageFileNames = []
-		await this.loadSettings();
 
 		this.addCommand({
 			id: "re-construt-image",
@@ -99,7 +112,7 @@ export default class ImageCPPlugin extends Plugin {
 
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		// this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new PasteSettingsTab(this.app, this));
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
@@ -679,31 +692,5 @@ function isImageWithLink(link: string): boolean {
 // 	onClose() {
 // 		const { contentEl } = this;
 // 		contentEl.empty();
-// 	}
-// }
-
-// class SampleSettingTab extends PluginSettingTab {
-// 	plugin: ImageCPPlugin;
-
-// 	constructor(app: App, plugin: ImageCPPlugin) {
-// 		super(app, plugin);
-// 		this.plugin = plugin;
-// 	}
-
-// 	display(): void {
-// 		const { containerEl } = this;
-
-// 		containerEl.empty();
-
-// 		new Setting(containerEl)
-// 			.setName('Setting #1')
-// 			.setDesc('It\'s a secret')
-// 			.addText(text => text
-// 				.setPlaceholder('Enter your secret')
-// 				.setValue(this.plugin.settings.defaultSetting)
-// 				.onChange(async (value) => {
-// 					this.plugin.settings.defaultSetting = value;
-// 					await this.plugin.saveSettings();
-// 				}));
 // 	}
 // }
