@@ -34,6 +34,12 @@ Usage:
 4. update the markdown file content which `![[Paste Image xxxx1.png]]` to `![img](MyTest/Paste-Image-xxx.png)`
 ![feature-2](./feature2.gif)
 
+
+2024-01-04 
+Updated settings function
+1. Support setting storage location, similar to typora’s picture function
+2. Support setting whether to transcode and store (readability is poor after transcoding)
+
 ## TODO
  - set paste name
  - auto size
