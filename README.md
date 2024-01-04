@@ -39,6 +39,8 @@ Usage:
 Updated functionality similar to typora settings
 1. Support setting relative storage location
 2. Support setting link transcoding (note that if there are spaces in the file, obsidian cannot recognize it, but typora can)
+
+
 更新了类似于typora设置的功能
 1. 支持设置相对存储位置
 2. 支持设置链接转码（注意文件中有空格则obsidian无法识别，但typora可以）
