@@ -112,59 +112,59 @@ export class PasteSettingsTab extends PluginSettingTab {
 
 
 
-    new Setting(this.containerEl).setName('Date display format').then((setting) => {
-      setting.addMomentFormat((mf) => {
-        setting.descEl.appendChild(
-          createFragment((frag) => {
-            frag.appendText(
+    // new Setting(this.containerEl).setName('Date display format').then((setting) => {
+    //   setting.addMomentFormat((mf) => {
+    //     setting.descEl.appendChild(
+    //       createFragment((frag) => {
+    //         frag.appendText(
              
-                'This format will be used when displaying dates in Kanban cards.'
+    //             'This format will be used when displaying dates in Kanban cards.'
              
-            );
-            frag.createEl('br');
-            frag.appendText('For more syntax, refer to');
-            frag.createEl(
-              'a',
-              {
-                text: ('format reference'),
-                href: 'https://momentjs.com/docs/#/displaying/format/',
-              },
-              (a) => {
-                a.setAttr('target', '_blank');
-              }
-            );
-            frag.createEl('br');
-            frag.appendText(t('Your current syntax looks like this') + ': ');
-            mf.setSampleEl(frag.createEl('b', { cls: 'u-pop' }));
-            frag.createEl('br');
-          })
-        );
+    //         );
+    //         frag.createEl('br');
+    //         frag.appendText('For more syntax, refer to');
+    //         frag.createEl(
+    //           'a',
+    //           {
+    //             text: ('format reference'),
+    //             href: 'https://momentjs.com/docs/#/displaying/format/',
+    //           },
+    //           (a) => {
+    //             a.setAttr('target', '_blank');
+    //           }
+    //         );
+    //         frag.createEl('br');
+    //         frag.appendText(t('Your current syntax looks like this') + ': ');
+    //         mf.setSampleEl(frag.createEl('b', { cls: 'u-pop' }));
+    //         frag.createEl('br');
+    //       })
+    //     );
 
-        // const [value, globalValue] = this.getSetting(
-        //   'date-display-format',
-        //   local
-        // );
-        // const defaultFormat = getDefaultDateFormat(this.app);
+    //     // const [value, globalValue] = this.getSetting(
+    //     //   'date-display-format',
+    //     //   local
+    //     // );
+    //     // const defaultFormat = getDefaultDateFormat(this.app);
 
-        mf.setPlaceholder("defaultFormat");
-        mf.setDefaultFormat("defaultFormat111");
-        mf.setValue(("value"))
+    //     mf.setPlaceholder("defaultFormat");
+    //     mf.setDefaultFormat("defaultFormat111");
+    //     mf.setValue(("value"))
      
-        mf.onChange((newValue) => {
-          if (newValue) {
-            this.applySettingsUpdate({
-              'date-display-format': {
-                $set: newValue,
-              },
-            });
-          } else {
-            this.applySettingsUpdate({
-              $unset: ['date-display-format'],
-            });
-          }
-        });
-      });
-    });
+    //     mf.onChange((newValue) => {
+    //       if (newValue) {
+    //         this.applySettingsUpdate({
+    //           'date-display-format': {
+    //             $set: newValue,
+    //           },
+    //         });
+    //       } else {
+    //         this.applySettingsUpdate({
+    //           $unset: ['date-display-format'],
+    //         });
+    //       }
+    //     });
+    //   });
+    // });
 
     // this.addLocaleOverrideSetting();
   }
@@ -202,6 +202,7 @@ export class PasteSettingsTab extends PluginSettingTab {
         // dropdown.setValue(this.plugin.options.PasteImageOption);
         .onChange((value) => {
           this.plugin.settings.PasteImageOption = value
+          console.log(value)
           this.inputEI?.setDisabled(  !(this.plugin.settings.IsShowCustomPath = value == "tocustom"))
 
           // this.plugin.writeOptions("1243" + value);
@@ -226,7 +227,7 @@ export class PasteSettingsTab extends PluginSettingTab {
               text: " modify notes. Use at your own risk and please make backups."
           });
           e.createEl("p", {
-              text: "With large vaults, this could take awhile!"
+              // text: "With large vaults, this could take awhile!"
           });
       })
       )
@@ -256,9 +257,10 @@ export class PasteSettingsTab extends PluginSettingTab {
       .setName("Apply Rule To Online Image Setting")
       // .setDesc('For example, if you insert a file at \'img/example file.png\', it will become"img/example%20file.png\' Enable this for better compatibility with otherMarkdown engines, or disable this for better readability. ItWill affect formatting/restructuring commands')
       .addToggle((toggle) => {
-        toggle.setValue(true);
+        toggle.setValue(this.plugin.settings.IsApplyNetworklImage);
         toggle.onChange(async (value) => {
-          this.plugin.writeOptions("onChange");
+          this.plugin.settings.IsApplyNetworklImage = value
+          this.plugin.writeOptions("onChange"+value);
         });
       });
   }
@@ -269,9 +271,10 @@ export class PasteSettingsTab extends PluginSettingTab {
       .setName("Apply Rule To Local Image Setting")
       // .setDesc('For example, if you insert a file at \'img/example file.png\', it will become"img/example%20file.png\' Enable this for better compatibility with otherMarkdown engines, or disable this for better readability. ItWill affect formatting/restructuring commands')
       .addToggle((toggle) => {
-        toggle.setValue(true);
+        toggle.setValue( this.plugin.settings.IsApplyLocalImage);
         toggle.onChange(async (value) => {
-          this.plugin.writeOptions("onChange");
+          this.plugin.settings.IsApplyLocalImage = value
+          this.plugin.writeOptions("onChange"+value);
         });
       });
   }
@@ -286,9 +289,10 @@ export class PasteSettingsTab extends PluginSettingTab {
       .setName("Use relative path if possible")
       // .setDesc('For example, if you insert a file at \'img/example file.png\', it will become"img/example%20file.png\' Enable this for better compatibility with otherMarkdown engines, or disable this for better readability. ItWill affect formatting/restructuring commands')
       .addToggle((toggle) => {
-        toggle.setValue(true);
+        toggle.setValue(this.plugin.settings.IsRelativePath);
         toggle.onChange(async (value) => {
-          this.plugin.writeOptions("onChange");
+          this.plugin.settings.IsRelativePath = value
+          this.plugin.writeOptions("onChange"+value);
         });
       });
   }
@@ -298,9 +302,10 @@ export class PasteSettingsTab extends PluginSettingTab {
       .setName("Add ./ for relative path")
       .setDesc('When enabled, Typora will use pattern like ./assets/image.png instead ofassets/imagepng when generating relative path for inserted images.')
       .addToggle((toggle) => {
-        toggle.setValue(true);
+        toggle.setValue(this.plugin.settings.IsAddRelativePath);
         toggle.onChange(async (value) => {
-          this.plugin.writeOptions("onChange");
+          this.plugin.settings.IsAddRelativePath = value
+          this.plugin.writeOptions("onChange"+value);
         });
       });
   }
@@ -310,9 +315,10 @@ export class PasteSettingsTab extends PluginSettingTab {
       .setName("Auto escape image URL when insert")
       .setDesc('For example, if you insert a file at \'img/example file.png\', it will become"img/example%20file.png\' Enable this for better compatibility with otherMarkdown engines, or disable this for better readability. ItWill affect formatting/restructuring commands')
       .addToggle((toggle) => {
-        toggle.setValue(true);
+        toggle.setValue(this.plugin.settings.IsEscapeUriPath);
         toggle.onChange(async (value) => {
-          this.plugin.writeOptions("onChange");
+          this.plugin.settings.IsEscapeUriPath = value
+          this.plugin.writeOptions("onChange"+value);
         });
       });
   }

@@ -4,7 +4,7 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, Vault, TFile, TAbstra
 // } from './utils';
 // import { renderTemplate } from 'template'; 
 import { randomInt } from 'crypto';
-import { time } from 'console';
+import { dir, time } from 'console';
 import { path } from 'src/utils';
 import { PasteSettingsTab } from './settings';
 // import * as path from 'path';
@@ -22,6 +22,12 @@ interface PluginSettings {
 	IsShowCustomPath: boolean
 	PasteImageOption: string
 	CustomPath: string
+	IsEscapeUriPath: boolean
+	IsRelativePath: boolean
+	IsAddRelativePath: boolean
+	IsApplyLocalImage: boolean
+	IsApplyNetworklImage: boolean
+
 	// {{imageNameKey}}-{{DATE:YYYYMMDD}}
 	defaultSetting: string
 	imageNamePattern: string
@@ -46,7 +52,12 @@ const DEFAULT_SETTINGS: PluginSettings = {
 	disableRenameNotice: false,
 	IsShowCustomPath: false,
 	PasteImageOption: 'default',
-	CustomPath: './'
+	CustomPath: './',
+	IsEscapeUriPath: true,
+	IsAddRelativePath: true,
+	IsApplyLocalImage: true,
+	IsApplyNetworklImage: true,
+	IsRelativePath: false
 }
 
 const IMAGE_EXTENTION_NAMES = ["image/apng", "image/avif", "image/bmp", "image/gif", "image/x-icon", "image/jpeg", "image/png", "image/svg+xml", "image/tiff", "image/webp", "image/xbm, image-xbitmap"]
@@ -133,8 +144,8 @@ export default class ImageCPPlugin extends Plugin {
 					if (this.imageNameList == null || this.imageNameList.length === 0) {
 						// page other file, not image
 						return
-					} else if (this.imageNameList.length === 1 && this.imageNameList[0].type != "nai") {
-						// console.log("----------------------")
+					} else if (this.imageNameList.length === 1 && this.imageNameList[0].type === "network") {
+						console.log("----------------------", this.imageNameList[0], file.basename, file.name, file.path)
 						this.pasteOneImage2MDDir(this.imageNameList[0], file)
 					}
 					else if (this.imageNameList.length >= 1 && this.imageNameList[this.imageIndex].type != "nai") { // copy file
@@ -156,11 +167,43 @@ export default class ImageCPPlugin extends Plugin {
 	// input: (MdFile, "test.jpg")  
 	// output:    [ "MDFile.filename/test.jpg", "![test](MDFIle.filename/test.jpg)"]
 	async getRenameFilePath(mdFile: TFile, filename: string): Promise<[string, string]> {
-		const dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename
+		// const setDir: string;
+		let dirPath: string;
+		
+		switch (this.settings.PasteImageOption) {
+			// case "default":
+				
+			// 	break;
+			case "current":
+				dirPath = "./";
+				break;
+			case "toassets":
+				dirPath = "./assets";
+				break;
+			case "tofilenameassests":
+				dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
+				dirPath += ".assets"
+				break;
+			case "tocustom":
+				if (this.settings.CustomPath.startsWith("./") ) {
+					// const filenameDirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
+					if (this.settings.CustomPath.contains("${filename}")) {
+						dirPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
+					} else {
+						dirPath = this.settings.CustomPath
+					}
+					break;
+
+				}
+			default:
+				dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
+		}
+		console.log(mdFile.parent?.path, mdFile.basename, dirPath)
+		// const dirPath1 = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename
 		// console.log("isExist", dirPath)
-		if (!await this.app.vault.adapter.exists(dirPath)) {
+		if ( this.settings.PasteImageOption != "current" &&  !await this.app.vault.adapter.exists(dirPath)) {
 			// try create 同名文件夹
-			// console.log("not exist, will create")
+			console.log("not exist, will create")
 			await this.app.vault.createFolder(dirPath)
 		}
 
@@ -172,7 +215,12 @@ export default class ImageCPPlugin extends Plugin {
 			newFilename = filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf("."))
 			newImagePath = path.join(dirPath, newFilename)
 		}
-		const newLinkText = "![" + filename + "](" + encodeURI(path.join(mdFile.basename, newFilename)) + ")"
+		const linkName = this.settings.IsEscapeUriPath ?  encodeURI(path.join(dirPath, newFilename)) : path.join(dirPath, newFilename) 
+		
+		// const IsAddRelativePath =  this.settings.IsAddRelativePath ? "./" : "" ;
+		const IsAddRelativePath =  this.settings.IsAddRelativePath ? "" : "" ;
+		const newLinkText = "![" + newFilename + "](" +  IsAddRelativePath +  linkName+ ")"
+			console.log("new:", this.settings.IsAddRelativePath, IsAddRelativePath, newLinkText, linkName)
 		return [newImagePath, newLinkText]
 	}
 
@@ -230,14 +278,19 @@ export default class ImageCPPlugin extends Plugin {
 
 		// 
 
-
 		const cursor = editor.getCursor()
 		const line = editor.getLine(cursor.line)
-		
+		// console.log(line.substring(0, cursor.ch))
+		const imageOriNameLength = line.substring(0, cursor.ch).endsWith("]]") ? image.name.length + 5 : encodeURI(image.name).toString().length + 5;
+		// if (line.endsWith("]]")) {
+			// const imageOriNameLength = image.name.length + 5;
+
+		// }
+		//  const imageOriNameLength = new URL(image.name).toString().length
+		console.log(cursor.ch, line, line.length, newLinkText.length, imageOriNameLength, image.name , image.name.length + 5, encodeURI(image.name).toString().length + 5)
 		await this.app.vault.rename(image, newImagePath)
-		editor.replaceRange(newLinkText, { ...cursor, ch: 0 }, { ...cursor, ch: line.length })
-
-
+		// editor.replaceRange(newLinkText, { ...cursor, ch: line.length - imageOriNameLength  }, { ...cursor, ch: line.length })//- imageOriNameLength + newLinkText.length })
+		editor.replaceRange(newLinkText, { ...cursor, ch: cursor.ch - imageOriNameLength  }, { ...cursor, ch: cursor.ch })//- imageOriNameLength + newLinkText.length })
 
 	}
 
@@ -279,22 +332,31 @@ export default class ImageCPPlugin extends Plugin {
 		if (this.insertTextList.length === this.imageNameList.length - 1) {
 			
 			const cursor = editor.getCursor()
-			// const line = editor.getLine(cursor.line)
+			const line = editor.getLine(cursor.line)
 			// console.log('current line', line, cursor, editor.getCursor("anchor"), editor.getCursor("from"), editor.getCursor("to"))
 			
-			setTimeout(() => {
-				// console.log("embeds", this.app.metadataCache.getFileCache(this.getActiveFile()!)?.embeds)
-			}, 1000);
 			// editor.replaceRange(this.insertTextList.map(e=>e.dst).join("\n"), editor.getCursor())
 			const  lastStartInsertLine = cursor.line - (this.imageNameList.length-1)*2
 			const lastStartInsertLineContent =  editor.getLine(lastStartInsertLine)
 			var sp = {line:0, ch:0};
-			if (lastStartInsertLineContent === this.insertTextList[0].src) {
-				sp = {line: lastStartInsertLine, ch: 0}
-			} else if (lastStartInsertLineContent.endsWith(this.insertTextList[0].src) && lastStartInsertLineContent.length >= this.insertTextList[0].src.length) {
-				sp = {line: lastStartInsertLine, ch: lastStartInsertLineContent.length - this.insertTextList[0].src.length}
+			// console.log("--", this.insertTextList)
+			if (this.insertTextList.length != 0) {
+				// 复制了多个图片
+				if ( lastStartInsertLineContent === this.insertTextList[0].src) {
+					sp = {line: lastStartInsertLine, ch: 0}
+				} else if (lastStartInsertLineContent.endsWith(this.insertTextList[0].src) && lastStartInsertLineContent.length >= this.insertTextList[0].src.length) {
+					sp = {line: lastStartInsertLine, ch: lastStartInsertLineContent.length - this.insertTextList[0].src.length}
+				}
+				var content = this.insertTextList.map(x => x.dst).join("\n\n") + "\n\n" + newLinkText + "\n"
+
+			} else {
+				// 复制了一个图片
+				sp.ch = cursor.ch - srcLinkText.length
+				sp.line = cursor.line
+				var content = newLinkText
 			}
-			var content = this.insertTextList.map(x => x.dst).join("\n\n") + "\n\n" + newLinkText + "\n"
+			console.log(cursor.ch, cursor.line, line, srcLinkText, newImagePath, )
+			
 
 			editor.replaceRange(content, {line: sp.line, ch: sp.ch}, cursor)//, {line:cursor.line, ch:this.insertTextList.last()!.dst.length})
 			
@@ -355,7 +417,7 @@ export default class ImageCPPlugin extends Plugin {
 		this.MDTFile = markdownView.file!
 		// console.log("MDFILE", this.MDTFile)
 		if (t_types?.length == 2 && t_types[0] === "text/html" && t_types[1] === "Files") {
-
+			// 粘贴一个网络图片
 			const items = evt.clipboardData?.items
 			if (items?.length == 2 && items![1].kind == "file" && items![1].type.startsWith("image/")) {
 				let extension = items![1].type.split("/")[1]
