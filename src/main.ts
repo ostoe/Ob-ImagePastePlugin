@@ -194,10 +194,13 @@ export default class ImageCPPlugin extends Plugin {
 						const relativeCustomPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
 						dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, relativeCustomPath) : relativeCustomPath;
 						// dirPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
-					} else if (this.settings.CustomPath.contains("${filepath}")) {
+					}
+						else if (this.settings.CustomPath.contains("${filepath}")) {
 						// extract   'articles/col1/article'  from  'articles/col1/article.md'
-						const path = mdFile.path.substring(0, mdFile.path.length - mdFile.extension.length - 1)
-						dirPath = this.settings.CustomPath.replace(/\$\{filepath\}/g, path);
+						const relativeCustomPath = this.settings.CustomPath.replace(/\$\{filepath\}/g, mdFile.basename)
+						dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, relativeCustomPath) : relativeCustomPath;
+						// const path = mdFile.path.substring(0, mdFile.path.length - mdFile.extension.length - 1)
+						// dirPath = this.settings.CustomPath.replace(/\$\{filepath\}/g, path);	
 					}
 
 					else {
