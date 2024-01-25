@@ -38,6 +38,7 @@ Usage:
 2024-01-15 v0.1.2
 1. Fixed Custome Save Path: Distinguish between relative workspace path and relative current file path
 2. Plugin can able automatically save settings now.
+3. Add Custom Path with `${filepath}` Option.
 
 
 2024-01-04 

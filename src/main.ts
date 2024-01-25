@@ -83,11 +83,11 @@ type InsertText = {
 
 
 export default class ImageCPPlugin extends Plugin {
-  writeOptions(arg0: string ) {
-	// this.saveSettings()
-    // console.log(arg0)
-  }
-  	public toggle: true;
+	writeOptions(arg0: string) {
+		// this.saveSettings()
+		// console.log(arg0)
+	}
+	public toggle: true;
 	// public settings	: ISettings;
 	public settings: PluginSettings;
 	public imageNameList: PasteImageInfo[];
@@ -101,7 +101,7 @@ export default class ImageCPPlugin extends Plugin {
 		await this.loadSettings();
 		if (Platform.isWin) {
 			this.researchFromImageSrc = /<img src="(.*?)" alt="(.*?)"\/><|<img src="(.*?)"\/></
-		} else if (Platform.isMacOS ) { // || Platform.isLinux
+		} else if (Platform.isMacOS) { // || Platform.isLinux
 			this.researchFromImageSrc = /<img src="(.*?)"\/>$/
 		}
 		// this.imageFileNames = []
@@ -160,7 +160,7 @@ export default class ImageCPPlugin extends Plugin {
 		)
 
 		this.registerEvent(this.app.workspace.on('editor-paste', this.customPasteEventCallback))
-		
+
 	}
 
 	// get a image link with a standard markdown syntax.
@@ -170,10 +170,10 @@ export default class ImageCPPlugin extends Plugin {
 	async getRenameFilePath(mdFile: TFile, filename: string): Promise<[string, string]> {
 		// const setDir: string;
 		let dirPath: string;
-		
+
 		switch (this.settings.PasteImageOption) {
 			// case "default":
-				
+
 			// 	break;
 			case "current":
 				dirPath = "/";
@@ -188,14 +188,20 @@ export default class ImageCPPlugin extends Plugin {
 				dirPath += ".assets"
 				break;
 			case "tocustom":
-				if (this.settings.CustomPath.startsWith("./") ) {
+				if (this.settings.CustomPath.startsWith("./")) {
 					// const filenameDirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
 					if (this.settings.CustomPath.contains("${filename}")) {
-						const relativeCustomPath =  this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
+						const relativeCustomPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
 						dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, relativeCustomPath) : relativeCustomPath;
 						// dirPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
-					} else {
-						
+					} else if (this.settings.CustomPath.contains("${filepath}")) {
+						// extract   'articles/col1/article'  from  'articles/col1/article.md'
+						const path = mdFile.path.substring(0, mdFile.path.length - mdFile.extension.length - 1)
+						dirPath = this.settings.CustomPath.replace(/\$\{filepath\}/g, path);
+					}
+
+					else {
+
 						dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, this.settings.CustomPath) : this.settings.CustomPath;
 					}
 				} else {
@@ -208,7 +214,7 @@ export default class ImageCPPlugin extends Plugin {
 		console.log(mdFile.parent?.path, mdFile.basename, dirPath)
 		// const dirPath1 = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename
 		// console.log("isExist", dirPath)
-		if ( this.settings.PasteImageOption != "current" &&  !await this.app.vault.adapter.exists(dirPath)) {
+		if (this.settings.PasteImageOption != "current" && !await this.app.vault.adapter.exists(dirPath)) {
 			// try create 同名文件夹
 			console.log("not exist, will create")
 			await this.app.vault.createFolder(dirPath)
@@ -222,12 +228,12 @@ export default class ImageCPPlugin extends Plugin {
 			newFilename = filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf("."))
 			newImagePath = path.join(dirPath, newFilename)
 		}
-		const linkName = this.settings.IsEscapeUriPath ?  encodeURI(path.join(dirPath, newFilename)) : path.join(dirPath, newFilename) 
-		
+		const linkName = this.settings.IsEscapeUriPath ? encodeURI(path.join(dirPath, newFilename)) : path.join(dirPath, newFilename)
+
 		// const IsAddRelativePath =  this.settings.IsAddRelativePath ? "./" : "" ;
-		const IsAddRelativePath =  this.settings.IsAddRelativePath ? "" : "" ;
-		const newLinkText = "![" + newFilename + "](" +  IsAddRelativePath +  linkName+ ")"
-			console.log("new:", this.settings.IsAddRelativePath, IsAddRelativePath, newLinkText, linkName)
+		const IsAddRelativePath = this.settings.IsAddRelativePath ? "" : "";
+		const newLinkText = "![" + newFilename + "](" + IsAddRelativePath + linkName + ")"
+		console.log("new:", this.settings.IsAddRelativePath, IsAddRelativePath, newLinkText, linkName)
 		return [newImagePath, newLinkText]
 	}
 
@@ -290,14 +296,14 @@ export default class ImageCPPlugin extends Plugin {
 		// console.log(line.substring(0, cursor.ch))
 		const imageOriNameLength = line.substring(0, cursor.ch).endsWith("]]") ? image.name.length + 5 : encodeURI(image.name).toString().length + 5;
 		// if (line.endsWith("]]")) {
-			// const imageOriNameLength = image.name.length + 5;
+		// const imageOriNameLength = image.name.length + 5;
 
 		// }
 		//  const imageOriNameLength = new URL(image.name).toString().length
-		console.log(cursor.ch, line, line.length, newLinkText.length, imageOriNameLength, image.name , image.name.length + 5, encodeURI(image.name).toString().length + 5)
+		console.log(cursor.ch, line, line.length, newLinkText.length, imageOriNameLength, image.name, image.name.length + 5, encodeURI(image.name).toString().length + 5)
 		await this.app.vault.rename(image, newImagePath)
 		// editor.replaceRange(newLinkText, { ...cursor, ch: line.length - imageOriNameLength  }, { ...cursor, ch: line.length })//- imageOriNameLength + newLinkText.length })
-		editor.replaceRange(newLinkText, { ...cursor, ch: cursor.ch - imageOriNameLength  }, { ...cursor, ch: cursor.ch })//- imageOriNameLength + newLinkText.length })
+		editor.replaceRange(newLinkText, { ...cursor, ch: cursor.ch - imageOriNameLength }, { ...cursor, ch: cursor.ch })//- imageOriNameLength + newLinkText.length })
 
 	}
 
@@ -306,10 +312,10 @@ export default class ImageCPPlugin extends Plugin {
 		// console.log("run---------", pasteImageInfo, this.MDTFile)
 
 		if (!pasteImageInfo || !this.MDTFile) return;
-		
+
 		// 1. 同名文件夹是否存在
 		const dirPath = this.MDTFile.parent?.path ? path.join(this.MDTFile.parent.path, this.MDTFile.basename) : this.MDTFile.basename
-		
+
 		const filename = pasteImageInfo.filename
 
 		// 3. 手动更改文件名
@@ -335,24 +341,24 @@ export default class ImageCPPlugin extends Plugin {
 
 
 		this.app.vault.rename(image, newImagePath)
-		
+
 		if (this.insertTextList.length === this.imageNameList.length - 1) {
-			
+
 			const cursor = editor.getCursor()
 			const line = editor.getLine(cursor.line)
 			// console.log('current line', line, cursor, editor.getCursor("anchor"), editor.getCursor("from"), editor.getCursor("to"))
-			
+
 			// editor.replaceRange(this.insertTextList.map(e=>e.dst).join("\n"), editor.getCursor())
-			const  lastStartInsertLine = cursor.line - (this.imageNameList.length-1)*2
-			const lastStartInsertLineContent =  editor.getLine(lastStartInsertLine)
-			var sp = {line:0, ch:0};
+			const lastStartInsertLine = cursor.line - (this.imageNameList.length - 1) * 2
+			const lastStartInsertLineContent = editor.getLine(lastStartInsertLine)
+			var sp = { line: 0, ch: 0 };
 			// console.log("--", this.insertTextList)
 			if (this.insertTextList.length != 0) {
 				// 复制了多个图片
-				if ( lastStartInsertLineContent === this.insertTextList[0].src) {
-					sp = {line: lastStartInsertLine, ch: 0}
+				if (lastStartInsertLineContent === this.insertTextList[0].src) {
+					sp = { line: lastStartInsertLine, ch: 0 }
 				} else if (lastStartInsertLineContent.endsWith(this.insertTextList[0].src) && lastStartInsertLineContent.length >= this.insertTextList[0].src.length) {
-					sp = {line: lastStartInsertLine, ch: lastStartInsertLineContent.length - this.insertTextList[0].src.length}
+					sp = { line: lastStartInsertLine, ch: lastStartInsertLineContent.length - this.insertTextList[0].src.length }
 				}
 				var content = this.insertTextList.map(x => x.dst).join("\n\n") + "\n\n" + newLinkText + "\n"
 
@@ -362,11 +368,11 @@ export default class ImageCPPlugin extends Plugin {
 				sp.line = cursor.line
 				var content = newLinkText
 			}
-			console.log(cursor.ch, cursor.line, line, srcLinkText, newImagePath, )
-			
+			console.log(cursor.ch, cursor.line, line, srcLinkText, newImagePath,)
 
-			editor.replaceRange(content, {line: sp.line, ch: sp.ch}, cursor)//, {line:cursor.line, ch:this.insertTextList.last()!.dst.length})
-			
+
+			editor.replaceRange(content, { line: sp.line, ch: sp.ch }, cursor)//, {line:cursor.line, ch:this.insertTextList.last()!.dst.length})
+
 			// 批量插入，从本地粘贴一堆图片时，在处理最后一个图片处理时再批量插入images的链接到md文件中。
 			// this.insertTextList.forEach(ele => {
 			// 	console.log("insert text---:", ele.dst, editor.getCursor())
@@ -563,7 +569,7 @@ export default class ImageCPPlugin extends Plugin {
 
 	}
 
-	
+
 	onunload() {
 
 	}
@@ -580,7 +586,7 @@ export default class ImageCPPlugin extends Plugin {
 
 
 
-	
+
 
 
 	getActiveFile() {
@@ -620,100 +626,100 @@ function isMarkdownFile(file: TAbstractFile): boolean {
 
 
 function isImageWithLink(link: string): boolean {
-	return IMAGE_EXTS.contains(  link.split(".").last()!.toLowerCase())
+	return IMAGE_EXTS.contains(link.split(".").last()!.toLowerCase())
 }
 
 
 
 
 
-	// customPasteEventCallback111(evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo) {
-	// 	// throw new Error('Method not implemented.');
-	// 	new Notice(this.settings.defaultSetting + "fsafslfsfsjl",); //evt.clipboardData, );; ??????无法访问本地变量？
-	// 	// editor.replaceSelection("--------" + evt);
-	// 	// editor.replaceSelection("line168-----------" + this.imageFileNames.length.toString());
+// customPasteEventCallback111(evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo) {
+// 	// throw new Error('Method not implemented.');
+// 	new Notice(this.settings.defaultSetting + "fsafslfsfsjl",); //evt.clipboardData, );; ??????无法访问本地变量？
+// 	// editor.replaceSelection("--------" + evt);
+// 	// editor.replaceSelection("line168-----------" + this.imageFileNames.length.toString());
 
-	// 	["---------:",
-	// 		evt.clipboardData?.types, //   网络图片为：text/html,Files，文字为： text/plain,text/html，粘贴本地是：Files，粘贴表格==粘贴文字
-	// 		evt.clipboardData?.items.length,  // 粘贴单张本地，为1，粘贴单张网络为2？很神奇
-	// 		evt.clipboardData?.items[0].type,  // 网络 undefined 本地？
-	// 		evt.clipboardData?.items[0].getAsFile()?.name,  // 当从本地主复制过去时，能够直接获取到文件名, 粘贴两个时只能显示第一个，所以要根据数量 items[index]
-	// 		// 单纯网络粘贴时，为空undefined
-	// 		evt.clipboardData?.items[0].getAsString((s) => { editor.replaceSelection("ss--" + s) }),  // 从网络粘贴时，改行会变成html ,从本地粘贴时，s为空，粘贴txt时这里直接打印txt
-	// 		/* <html>
-	// 		  <body>
-	// 		  <!--StartFragment--><img src="https://p26-passport.byteacctimg.com/img/user-avatar/075d8e781ba84bf64035ac251988fb93~140x140.awebp" alt="avatar"/><!--EndFragment-->
-	// 		  </body>
-	// 		  </html> */
-	// 		evt.clipboardData?.files.length,  // 粘贴图片数量
+// 	["---------:",
+// 		evt.clipboardData?.types, //   网络图片为：text/html,Files，文字为： text/plain,text/html，粘贴本地是：Files，粘贴表格==粘贴文字
+// 		evt.clipboardData?.items.length,  // 粘贴单张本地，为1，粘贴单张网络为2？很神奇
+// 		evt.clipboardData?.items[0].type,  // 网络 undefined 本地？
+// 		evt.clipboardData?.items[0].getAsFile()?.name,  // 当从本地主复制过去时，能够直接获取到文件名, 粘贴两个时只能显示第一个，所以要根据数量 items[index]
+// 		// 单纯网络粘贴时，为空undefined
+// 		evt.clipboardData?.items[0].getAsString((s) => { editor.replaceSelection("ss--" + s) }),  // 从网络粘贴时，改行会变成html ,从本地粘贴时，s为空，粘贴txt时这里直接打印txt
+// 		/* <html>
+// 		  <body>
+// 		  <!--StartFragment--><img src="https://p26-passport.byteacctimg.com/img/user-avatar/075d8e781ba84bf64035ac251988fb93~140x140.awebp" alt="avatar"/><!--EndFragment-->
+// 		  </body>
+// 		  </html> */
+// 		evt.clipboardData?.files.length,  // 粘贴图片数量
 
-	// 		evt.clipboardData?.files.item(0)?.type,   //  image/jpeg | image/png | .awebp | .awebp ?能识别网络文件类型或本地图片类型 
-	// 		//    evt.clipboardData?.files.item(0) == evt.clipboardData?.items[0].getAsFile()
-	// 		evt.clipboardData?.files.item(0)?.name, // 网络图片能获取到image.png，和上面差不多， 本地图片能获取到文件名 ！只能靠解析getAsString
-	// 		// evt.clipboardData?.files.item(0)?.arrayBuffer().then((v)=>editor.replaceSelection(v))
-	// 		new Date().getTime().toString(),
-	// 		//    JSON.stringify(info)
-	// 		// 加上这句，最后就不会粘贴： ![[微信图片_20220516132509 6.jpg]]这个内容了
-	// 		// evt.preventDefault()
-	// 	].forEach(element => {
-	// 		editor.replaceSelection(element?.toString() + "-----END\n ")
+// 		evt.clipboardData?.files.item(0)?.type,   //  image/jpeg | image/png | .awebp | .awebp ?能识别网络文件类型或本地图片类型
+// 		//    evt.clipboardData?.files.item(0) == evt.clipboardData?.items[0].getAsFile()
+// 		evt.clipboardData?.files.item(0)?.name, // 网络图片能获取到image.png，和上面差不多， 本地图片能获取到文件名 ！只能靠解析getAsString
+// 		// evt.clipboardData?.files.item(0)?.arrayBuffer().then((v)=>editor.replaceSelection(v))
+// 		new Date().getTime().toString(),
+// 		//    JSON.stringify(info)
+// 		// 加上这句，最后就不会粘贴： ![[微信图片_20220516132509 6.jpg]]这个内容了
+// 		// evt.preventDefault()
+// 	].forEach(element => {
+// 		editor.replaceSelection(element?.toString() + "-----END\n ")
 
-	// 	});
+// 	});
 
-	// 	if (!evt.clipboardData || evt.clipboardData.items.length === 0) {
-	// 		return
-	// 	} else {
-	// 		var files = evt.clipboardData.files
-	// 		editor.replaceSelection("local-name000-----------" + files.length.toString() + "-" + evt.clipboardData.files.length.toString())
+// 	if (!evt.clipboardData || evt.clipboardData.items.length === 0) {
+// 		return
+// 	} else {
+// 		var files = evt.clipboardData.files
+// 		editor.replaceSelection("local-name000-----------" + files.length.toString() + "-" + evt.clipboardData.files.length.toString())
 
-	// 		switch (evt.clipboardData.types.toString()) {
-	// 			case "text/html,Files":
-	// 				// 党章网络图片
-	// 				// 网络图片，解析文件名 TODO解析html文件名！
-	// 				// this.debuglog1("local-name-----------" + t_type) // 因为editor这里无法嵌套别的 editor打印 
-	// 				evt.clipboardData?.items[0].getAsString(s => { this.imageFileNames.push("123" + s) })
-	// 				editor.replaceSelection("line208-----------" + this.imageFileNames.length.toString())
+// 		switch (evt.clipboardData.types.toString()) {
+// 			case "text/html,Files":
+// 				// 党章网络图片
+// 				// 网络图片，解析文件名 TODO解析html文件名！
+// 				// this.debuglog1("local-name-----------" + t_type) // 因为editor这里无法嵌套别的 editor打印
+// 				evt.clipboardData?.items[0].getAsString(s => { this.imageFileNames.push("123" + s) })
+// 				editor.replaceSelection("line208-----------" + this.imageFileNames.length.toString())
 
-	// 				// files[i]
-	// 				break;
-	// 			case "Files":
-	// 				// 本地图片，原始文件名 可能是多个，也可能是多个，有图片有文件
-	// 				// this.debuglog1("local-name", items[i].getAsFile.name)
-	// 				for (let i = 0; i < files.length; i += 1) {
-	// 					const t_type = files[i].type
-	// 					// const t_type = items[i].type
-	// 					if (t_type.startsWith('image') && IMAGE_EXTENTION_NAMES.includes(t_type)) {
-	// 						editor.replaceSelection("local-name111-----------" + files[i].name)
-	// 						this.imageFileNames.push(files[i].name)
+// 				// files[i]
+// 				break;
+// 			case "Files":
+// 				// 本地图片，原始文件名 可能是多个，也可能是多个，有图片有文件
+// 				// this.debuglog1("local-name", items[i].getAsFile.name)
+// 				for (let i = 0; i < files.length; i += 1) {
+// 					const t_type = files[i].type
+// 					// const t_type = items[i].type
+// 					if (t_type.startsWith('image') && IMAGE_EXTENTION_NAMES.includes(t_type)) {
+// 						editor.replaceSelection("local-name111-----------" + files[i].name)
+// 						this.imageFileNames.push(files[i].name)
 
-	// 					} else {
-	// 						this.imageFileNames.push("")
-	// 					}
-	// 				}
+// 					} else {
+// 						this.imageFileNames.push("")
+// 					}
+// 				}
 
-	// 				break;
+// 				break;
 
-	// 			default: { }
+// 			default: { }
 
-	// 		}
+// 		}
 
-	// 		editor.replaceSelection("line232-----------" + this.imageFileNames.length)
+// 		editor.replaceSelection("line232-----------" + this.imageFileNames.length)
 
-	// 		// 成功逻辑
-	// 		return
-	// 	}
-	// 	this.imageFileNames = []
-	// 	evt.preventDefault()
+// 		// 成功逻辑
+// 		return
+// 	}
+// 	this.imageFileNames = []
+// 	evt.preventDefault()
 
 
-	// 	return
-	// }
+// 	return
+// }
 
-	// allFilesTryGetImages(files: FileList) {
-	// 	var sum = []
+// allFilesTryGetImages(files: FileList) {
+// 	var sum = []
 
-	// 	return true
-	// }
+// 	return true
+// }
 
 
 
