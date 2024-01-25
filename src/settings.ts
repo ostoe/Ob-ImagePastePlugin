@@ -186,7 +186,7 @@ export class PasteSettingsTab extends PluginSettingTab {
         // var localeWeekStart = "Default"
         var PasteOptions: Record<string, string> = {
           default: "Default",
-          current: "Copy image to current folder (./)",
+          current: "Copy image to current folder (/)",
           toassets: "Copy image to ./assets",
           tofilenameassests: "Copy image to ./${filename}.assets",
           // "Upload image",
@@ -202,9 +202,11 @@ export class PasteSettingsTab extends PluginSettingTab {
         // dropdown.setValue(this.plugin.options.PasteImageOption);
         .onChange((value) => {
           this.plugin.settings.PasteImageOption = value
-          console.log(value)
+          // console.log(value)
+          this.plugin.saveSettings()
           this.inputEI?.setDisabled(  !(this.plugin.settings.IsShowCustomPath = value == "tocustom"))
-
+          if (value == "tocustom")
+          if (value != "tocustom")  this.plugin.settings.CustomPath = ""
           // this.plugin.writeOptions("1243" + value);
         });
       });
@@ -227,20 +229,23 @@ export class PasteSettingsTab extends PluginSettingTab {
               text: " modify notes. Use at your own risk and please make backups."
           });
           e.createEl("p", {
-              // text: "With large vaults, this could take awhile!"
+              text: "IF set path start with './', it will set a relative current MDFile path."
           });
+          e.createEl("p", {
+            text: "IF set path start without './, it will set a relative workspace root path."
+        });
       })
       )
       // .setDesc("Please specify a relative path to current folder which begins with './' or '../', or an absolute folder path. (${filename} representing for currents filename.)")
 
       .addText((textfield) => {
         this.inputEI =   textfield;
-        textfield.setPlaceholder(String("defaulltss"));
+        textfield.setPlaceholder(String("default"));
         // textfield.inputEl.type = "string";
         textfield.setValue(this.plugin.settings.CustomPath );
         textfield.onChange(async (value) => {
           this.plugin.settings.CustomPath = value
-          this.plugin.writeOptions("12424323" + value);
+          this.plugin.saveSettings();
         })
         ;
       });
@@ -260,7 +265,7 @@ export class PasteSettingsTab extends PluginSettingTab {
         toggle.setValue(this.plugin.settings.IsApplyNetworklImage);
         toggle.onChange(async (value) => {
           this.plugin.settings.IsApplyNetworklImage = value
-          this.plugin.writeOptions("onChange"+value);
+          this.plugin.saveSettings();
         });
       });
   }
@@ -274,7 +279,7 @@ export class PasteSettingsTab extends PluginSettingTab {
         toggle.setValue( this.plugin.settings.IsApplyLocalImage);
         toggle.onChange(async (value) => {
           this.plugin.settings.IsApplyLocalImage = value
-          this.plugin.writeOptions("onChange"+value);
+          this.plugin.saveSettings();
         });
       });
   }
@@ -292,7 +297,7 @@ export class PasteSettingsTab extends PluginSettingTab {
         toggle.setValue(this.plugin.settings.IsRelativePath);
         toggle.onChange(async (value) => {
           this.plugin.settings.IsRelativePath = value
-          this.plugin.writeOptions("onChange"+value);
+          this.plugin.saveSettings();
         });
       });
   }
@@ -305,7 +310,7 @@ export class PasteSettingsTab extends PluginSettingTab {
         toggle.setValue(this.plugin.settings.IsAddRelativePath);
         toggle.onChange(async (value) => {
           this.plugin.settings.IsAddRelativePath = value
-          this.plugin.writeOptions("onChange"+value);
+          this.plugin.saveSettings();
         });
       });
   }
@@ -318,7 +323,7 @@ export class PasteSettingsTab extends PluginSettingTab {
         toggle.setValue(this.plugin.settings.IsEscapeUriPath);
         toggle.onChange(async (value) => {
           this.plugin.settings.IsEscapeUriPath = value
-          this.plugin.writeOptions("onChange"+value);
+          this.plugin.saveSettings();
         });
       });
   }
@@ -334,7 +339,7 @@ export class PasteSettingsTab extends PluginSettingTab {
       .addToggle((toggle) => {
         toggle.setValue(true);
         toggle.onChange(async (value) => {
-          this.plugin.writeOptions("onChange");
+          this.plugin.saveSettings();
         });
       });
 
@@ -351,7 +356,7 @@ export class PasteSettingsTab extends PluginSettingTab {
         textfield.inputEl.type = "number";
         textfield.setValue(String("this.plugin.options.wordsPerDot"));
         textfield.onChange(async (value) => {
-          this.plugin.writeOptions("12424323");
+          this.plugin.saveSettings();
         });
       });
   }

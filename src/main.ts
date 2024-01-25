@@ -84,7 +84,8 @@ type InsertText = {
 
 export default class ImageCPPlugin extends Plugin {
   writeOptions(arg0: string ) {
-    console.log(arg0)
+	// this.saveSettings()
+    // console.log(arg0)
   }
   	public toggle: true;
 	// public settings	: ISettings;
@@ -94,7 +95,7 @@ export default class ImageCPPlugin extends Plugin {
 	private imageIndex = 0;
 	private researchFromImageSrc: RegExp;
 	private MDTFile: TFile;
-	imageFileNames: any;
+	// imageFileNames: any;
 	async onload() {
 
 		await this.loadSettings();
@@ -175,10 +176,12 @@ export default class ImageCPPlugin extends Plugin {
 				
 			// 	break;
 			case "current":
-				dirPath = "./";
+				dirPath = "/";
 				break;
 			case "toassets":
-				dirPath = "./assets";
+				dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, ".assets") : mdFile.basename;
+				// dirPath += ".assets"
+				// dirPath = "./assets";
 				break;
 			case "tofilenameassests":
 				dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
@@ -188,13 +191,17 @@ export default class ImageCPPlugin extends Plugin {
 				if (this.settings.CustomPath.startsWith("./") ) {
 					// const filenameDirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
 					if (this.settings.CustomPath.contains("${filename}")) {
-						dirPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
+						const relativeCustomPath =  this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
+						dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, relativeCustomPath) : relativeCustomPath;
+						// dirPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
 					} else {
-						dirPath = this.settings.CustomPath
+						
+						dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, this.settings.CustomPath) : this.settings.CustomPath;
 					}
-					break;
-
+				} else {
+					dirPath = this.settings.CustomPath
 				}
+				break;
 			default:
 				dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
 		}
@@ -563,7 +570,7 @@ export default class ImageCPPlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-		this.imageFileNames = Object.assign([],)
+		// this.imageFileNames = Object.assign([],)
 
 	}
 

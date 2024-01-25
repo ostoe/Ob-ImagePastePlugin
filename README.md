@@ -35,6 +35,9 @@ Usage:
 ![feature-2](./feature2.gif)
 
 
+2024-01-15 v0.1.2
+Fixed Custome Save Path: Distinguish between relative workspace path and relative current file path
+
 2024-01-04 
 Updated functionality similar to typora settings
 1. Support setting relative storage location
@@ -50,11 +53,12 @@ Fixed the problem that if there is content before the line when pasting, it will
 ## TODO
  - set paste name
  - auto size
- - Folder regular save
+ - Folder regular save; done!
 
 
 调试快捷键：
 如果更新了ob版本后 ，ctrl+shift+i无法调出devtool，在设置里面搜索“调试快捷键”，取消设置ctrl+shift+i，然后再使用该快捷键即可生效
+macos: `cmmand+option+i`
 
 # 
 
