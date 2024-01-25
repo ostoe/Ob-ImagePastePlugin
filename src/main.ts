@@ -188,29 +188,44 @@ export default class ImageCPPlugin extends Plugin {
 				dirPath += ".assets"
 				break;
 			case "tocustom":
-				if (this.settings.CustomPath.startsWith("./")) {
-					// const filenameDirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
-					if (this.settings.CustomPath.contains("${filename}")) {
-						const relativeCustomPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
-						dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, relativeCustomPath) : relativeCustomPath;
-						// dirPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
-					}
-						else if (this.settings.CustomPath.contains("${filepath}")) {
-						// extract   'articles/col1/article'  from  'articles/col1/article.md'
-						const relativeCustomPath = this.settings.CustomPath.replace(/\$\{filepath\}/g, mdFile.basename)
-						dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, relativeCustomPath) : relativeCustomPath;
-						// const path = mdFile.path.substring(0, mdFile.path.length - mdFile.extension.length - 1)
-						// dirPath = this.settings.CustomPath.replace(/\$\{filepath\}/g, path);	
-					}
-
-					else {
-
-						dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, this.settings.CustomPath) : this.settings.CustomPath;
-					}
+				let replacePath: string;
+				if (this.settings.CustomPath.contains("${filename}")) {
+					replacePath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
+				} else if (this.settings.CustomPath.contains("${filepath}")) { 
+					replacePath = this.settings.CustomPath.replace(/\$\{filepath\}/g, mdFile.basename)
 				} else {
-					dirPath = this.settings.CustomPath
+					replacePath = this.settings.CustomPath;
+				}
+				if (this.settings.CustomPath.startsWith("./")) { 
+					dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, replacePath) : replacePath;
+				} else {
+					dirPath = replacePath;
 				}
 				break;
+				
+				// // if (this.settings.CustomPath.startsWith("./")) {
+
+				// 	// const filenameDirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
+				// 	if (this.settings.CustomPath.contains("${filename}")) {
+				// 		const relativeCustomPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
+				// 		dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, relativeCustomPath) : relativeCustomPath;
+				// 		// dirPath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
+				// 	}
+				// 	else if (this.settings.CustomPath.contains("${filepath}")) {
+				// 		// extract   'articles/col1/article'  from  'articles/col1/article.md'
+				// 		const relativeCustomPath = this.settings.CustomPath.replace(/\$\{filepath\}/g, mdFile.basename)
+				// 		dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, relativeCustomPath) : relativeCustomPath;
+				// 	}
+				// 	else {
+
+				// 		dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, this.settings.CustomPath) : this.settings.CustomPath;
+				// 	}
+				// // } else {
+				// 	// console.log("mdpathpp:", mdFile.path)
+				// 	// const path = mdFile.path.substring(0, mdFile.path.length - mdFile.extension.length - 1)
+				// 	dirPath = this.settings.CustomPath.replace(/\$\{filepath\}/g, mdFile.basename);
+				// // }
+				// break;
 			default:
 				dirPath = mdFile.parent?.path ? path.join(mdFile.parent!.path, mdFile.basename) : mdFile.basename;
 		}

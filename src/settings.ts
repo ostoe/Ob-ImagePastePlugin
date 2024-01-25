@@ -226,7 +226,7 @@ export class PasteSettingsTab extends PluginSettingTab {
           });
           text.createEl("strong", { text: "will" });
           text.createSpan({
-              text: " modify notes. Use at your own risk and please make backups."
+              text: " modify notes. Use at your own risk and please make backups. Custom Path Please Use `${filename}` or ${filepath}"
           });
           e.createEl("p", {
               text: "IF set path start with './', it will set a relative current MDFile path."

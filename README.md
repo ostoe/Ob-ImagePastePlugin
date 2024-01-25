@@ -35,6 +35,9 @@ Usage:
 ![feature-2](./feature2.gif)
 
 
+2024-01-16 v0.1.4
+1. Fixed some bug.
+
 2024-01-15 v0.1.3
 1. Add Custom Path with `${filepath}` Option.
 
