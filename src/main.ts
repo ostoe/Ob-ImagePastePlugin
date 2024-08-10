@@ -191,7 +191,7 @@ export default class ImageCPPlugin extends Plugin {
 				let replacePath: string;
 				if (this.settings.CustomPath.contains("${filename}")) {
 					replacePath = this.settings.CustomPath.replace(/\$\{filename\}/g, mdFile.basename)
-				} else if (this.settings.CustomPath.contains("${filepath}")) { 
+				} else if (this.settings.CustomPath.contains("${filepath}")) {
 					replacePath = this.settings.CustomPath.replace(/\$\{filepath\}/g, mdFile.basename)
 				} else {
 					replacePath = this.settings.CustomPath;
@@ -246,10 +246,29 @@ export default class ImageCPPlugin extends Plugin {
 			newFilename = filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf("."))
 			newImagePath = path.join(dirPath, newFilename)
 		}
-		const linkName = this.settings.IsEscapeUriPath ? encodeURI(path.join(dirPath, newFilename)) : path.join(dirPath, newFilename)
+
 
 		// const IsAddRelativePath =  this.settings.IsAddRelativePath ? "./" : "" ;
 		const IsAddRelativePath = this.settings.IsAddRelativePath ? "" : "";
+
+		if(this.settings.CustomPath.startsWith("./") && dirPath.includes("/")){
+			let tmpDirPath : string;
+			let names = [];
+			names = dirPath.split("/");
+			if(names.length >= 1){
+				tmpDirPath = "./" + names[names.length-1] + "/" + newFilename;
+				dirPath = tmpDirPath;
+			}
+		}
+
+		let linkName :string;
+		if(this.settings.IsAddRelativePath){
+			linkName = this.settings.IsEscapeUriPath ? encodeURI(dirPath) : dirPath
+		}else{
+			linkName = this.settings.IsEscapeUriPath ? encodeURI(path.join(dirPath, newFilename)) : path.join(dirPath, newFilename)
+		}
+
+
 		const newLinkText = "![" + newFilename + "](" + IsAddRelativePath + linkName + ")"
 		console.log("new:", this.settings.IsAddRelativePath, IsAddRelativePath, newLinkText, linkName)
 		return [newImagePath, newLinkText]
