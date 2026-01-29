@@ -246,13 +246,28 @@ export default class ImageCPPlugin extends Plugin {
 			newFilename = filename.substring(0, filename.lastIndexOf(".")) + "-" + getFormatNow() + filename.substring(filename.lastIndexOf("."))
 			newImagePath = path.join(dirPath, newFilename)
 		}
-		const linkName = this.settings.IsEscapeUriPath ? encodeURI(path.join(dirPath, newFilename)) : path.join(dirPath, newFilename)
+		//调整开始
+		// 1. 获取完整的图片路径
+		let relativeLink = path.join(dirPath, newFilename);
+		
+		// 2. 获取当前 MD 文档的父目录路径
+		const currentDir = mdFile.parent?.path || "";
 
-		// const IsAddRelativePath =  this.settings.IsAddRelativePath ? "./" : "" ;
-		const IsAddRelativePath = this.settings.IsAddRelativePath ? "" : "";
-		const newLinkText = "![" + newFilename + "](" + IsAddRelativePath + linkName + ")"
-		console.log("new:", this.settings.IsAddRelativePath, IsAddRelativePath, newLinkText, linkName)
-		return [newImagePath, newLinkText]
+		// 3. 智能裁剪：如果图片路径以当前文档所在目录开头，说明是子目录，去掉前缀
+		if (currentDir !== "" && currentDir !== "/" && relativeLink.startsWith(currentDir + "/")) {
+			relativeLink = relativeLink.substring(currentDir.length + 1);
+		}
+
+		// 4. 根据设置决定是否转义 URL (encodeURI)
+		const linkName = this.settings.IsEscapeUriPath ? encodeURI(relativeLink) : relativeLink;
+
+		// 5. 修复 BUG：正确读取 "Add ./ for relative path" 设置
+		const IsAddRelativePath = this.settings.IsAddRelativePath ? "./" : "";
+		
+		// 6. 拼接最终链接
+		const newLinkText = "![" + newFilename + "](" + IsAddRelativePath + linkName + ")";
+		//调整结束
+		return [newImagePath, newLinkText];
 	}
 
 
